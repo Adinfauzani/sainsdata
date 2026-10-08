@@ -1,3 +1,4 @@
+import bcrypt from 'bcryptjs'
 import { Client, Pool } from 'pg'
 import { instrumenSections } from '../src/data/instrumen'
 
@@ -26,12 +27,27 @@ export async function seed(): Promise<void> {
   if (adminCount.rows[0].n === 0) {
     const username = 'admin'
     const password = process.env.ADMIN_PASSWORD ?? 'admin123'
-    const hash = await Bun.password.hash(password)
+    const hash = bcrypt.hashSync(password, 10)
     await pool.query('INSERT INTO admins (username, password_hash) VALUES ($1, $2)', [
       username,
       hash,
     ])
     console.log(`[seed] admin dibuat — username: ${username}, password: ${password}`)
+  } else {
+    const defaultAdmin = await pool.query(
+      'SELECT id, password_hash FROM admins WHERE username = $1 ORDER BY id LIMIT 1',
+      ['admin']
+    )
+    const existing = defaultAdmin.rows[0]
+    if (existing && !existing.password_hash.startsWith('$2')) {
+      const password = process.env.ADMIN_PASSWORD ?? 'admin123'
+      const hash = bcrypt.hashSync(password, 10)
+      await pool.query('UPDATE admins SET password_hash = $1 WHERE id = $2', [
+        hash,
+        existing.id,
+      ])
+      console.log('[seed] password default admin dimigrasikan ke bcrypt')
+    }
   }
 
   for (const section of instrumenSections) {

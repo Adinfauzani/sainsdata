@@ -16,6 +16,12 @@ a git repository (no history, no commits).
 | `bun run lint`    | `oxlint`.                               |
 | `bun run preview` | Local preview of the production build.  |
 
+- `tsc -b` covers three project references: `tsconfig.app.json` (`src`),
+  `tsconfig.node.json` (`vite.config.ts`), and `tsconfig.server.json`
+  (`server/` **and** `api/` — backend + Vercel functions get typechecked).
+  `tsconfig.server.json` uses `moduleResolution: bundler` (extensionless
+  imports, like the app), `lib` includes `DOM` (Web `Request`/`File`/
+  `crypto`), and `types: ["bun", "node"]` (`@types/bun`).
 - Typecheck alone: `bun run tsc -b`. There is no `typecheck` script — do not
   invent `npm run typecheck`. Build order matters: `tsc -b` runs before
   `vite build`, so a passing build already implies types are clean.
@@ -128,16 +134,42 @@ Routes (all implemented, plus a `*` catch-all 404 rendered in Indonesian):
   only admins know/reach `/login` directly.
 - `ScrollToTop` in `App.tsx` scrolls to top on pathname change.
 
-## Backend & auth (Neon Postgres)
+## Backend & auth (Neon Postgres) — Bun dev + single-deploy Vercel
 
-- `server/` runs under **Bun directly** (TS, no build step) via
-  `bun server/index.ts`. Deps: `pg` (+ `@types/pg`). Uses `Bun.serve`,
-  `Bun.password` (hash/verify), `Bun.file`.
+- **One shared handler, two runtimes.** All route logic lives in the
+  framework-agnostic `server/handler.ts` (`handleApi(req, path)` + helpers
+  `json`/`readJson`/`bearerToken`/`adminFromToken`/`deleteStoredFile`, module
+  `pool`, constants `UPLOAD_ALLOWED`/`UPLOAD_MAX_BYTES`). It imports **no Bun
+  APIs** — it runs under Bun (dev) and on Vercel's Node runtime.
+  Passwords are hashed/verified with **`bcryptjs`** (pure JS, cross-runtime);
+  the seed migrates a pre-existing argon2 hash (old `Bun.password`) to bcrypt
+  for the default `admin` account.
+- **Dev** (`server/index.ts`): runs under **Bun directly** (TS, no build
+  step) via `bun server/index.ts`. Deps: `pg` (+ `@types/pg`). Uses
+  `Bun.serve`, `Bun.file`, `Bun.write`. On boot runs `migrate()` + `seed()`
+  (with retries — Neon is intermittent), delegates `/api/*` to `handleApi`
+  except the disk upload, serves `/uploads/*`, and keeps the disk-file upload.
+- **Vercel** (`api/`): folder-functions per route
+  (`api/auth/login.ts`, `auth/logout.ts`, `auth/me.ts`, `stats.ts`,
+  `instrumen.ts`, `instrumen/children.ts`, `instrumen/upload.ts`) —
+  thin default-exported `handler(req)` wrappers that delegate to
+  `api/_lib/route.ts` → `handleApi`. Files/dirs starting with `_` in `api/`
+  are not routed (shared code). Upload on Vercel uses **`@vercel/blob`**
+  `put()` (`access: 'public'`, `addRandomSuffix: false`) with `crypto.randomUUID()`
+  names and stores the absolute blob URL in `file_url`; reads (preview/
+  download) just hit that URL. `deleteStoredFile` removes the blob when
+  `BLOB_READ_WRITE_TOKEN` is set, else unlinks `server/uploads/*`.
+- `vercel.json`: `buildCommand: "bun run build"`, `installCommand:
+  "bun install"`, `outputDirectory: "dist"`, `functions.api/**/*.ts`
+  `maxDuration: 30`, SPA fallback rewrite `/((?!api/).*)` → `/index.html`
+  (asset/function paths take precedence over rewrites).
 - **DB**: Neon Postgres. `.env` (gitignored) holds `DATABASE_URL` (pooled)
   and `DATABASE_URL_NON_POOLING` (+ optional `PORT`, `ADMIN_PASSWORD`).
   Convention: non-pooling URL for DDL/migrations (`server/db.ts` →
   `migrate()`), pooled URL for app queries. Never commit `.env`; a
-  `.env.example` with placeholders exists.
+  `.env.example` with placeholders exists (incl. `BLOB_READ_WRITE_TOKEN` for
+  Blob uploads). DDL runs **only** on dev boot (`migrate()`), never on Vercel
+  — provision the schema once (locally or via Neon) before deploying.
 - `server/schema.sql`: `admins` (a `BEFORE INSERT` trigger
   `enforce_admin_limit()` caps the table at **3 admin accounts max** —
   inserting a 4th raises `Maksimal 3 akun admin`), `sessions`,
@@ -146,9 +178,11 @@ Routes (all implemented, plus a `*` catch-all 404 rendered in Indonesian):
   `instrumen_children` (child doc metadata in a `doc JSONB` +
   `file_name`/`file_url`). Boot runs `migrate()` then `seed()`:
   seeds admin `admin` / `admin123` (default, override with
-  `ADMIN_PASSWORD`) when the admins table is empty, upserts sections + rows
-  from `src/data/instrumen.ts` every boot (idempotent — safe to restart), and
-  deletes placeholder children that have no `doc`/file fields.
+  `ADMIN_PASSWORD`, hashed with **bcryptjs**; the default `admin` row is
+  re-hashed if its stored hash isn't bcrypt) when the admins table is empty,
+  upserts sections + rows from `src/data/instrumen.ts` every boot (idempotent
+  — safe to restart), and deletes placeholder children that have no
+  `doc`/file fields.
 - API routes (JSON; `Authorization: Bearer <token>` for protected):
   - `POST /api/auth/login` → `{ token, admin }` (7-day session row)
   - `POST /api/auth/logout`, `GET /api/auth/me` (session-backed — auth
@@ -162,12 +196,13 @@ Routes (all implemented, plus a `*` catch-all 404 rendered in Indonesian):
   - `PUT /api/instrumen/children` (auth) — update child `doc` + sync
     `subKriteria`/`indikator` (`{ sectionNo, rowId, childNo, doc }`)
   - `DELETE /api/instrumen/children` (auth) — delete child; also best-effort
-    deletes its stored file
+    deletes its stored file (Blob or `server/uploads/*`)
   - `POST /api/instrumen/upload` (auth) — multipart
     `{ file, sectionNo, rowId, childNo }`; extension allowlist
-    `.pdf,.doc,.docx,.txt,.rtf,.csv,.xls,.xlsx,.ppt,.pptx`, ≤ 25 MB, saved to
-    `server/uploads/<uuid><ext>` (via `/uploads/*`) and set as the child's
-    `fileName` (original name) + `fileUrl`
+    `.pdf,.doc,.docx,.txt,.rtf,.csv,.xls,.xlsx,.ppt,.pptx`, ≤ 25 MB. Dev saves
+    to `server/uploads/<uuid><ext>` served via `/uploads/*`; Vercel stores it
+    in **Blob Storage** and keeps the absolute URL. Either way the child's
+    `fileName` (original name) + `fileUrl` get set.
 - Frontend: `src/lib/api.ts` (fetch wrapper, token in `localStorage` key
   `akreditasi_token`), `src/context/auth.ts` (`AuthContext` + `useAuth`),
   `src/context/AuthContext.tsx` (`AuthProvider` — restores session on
