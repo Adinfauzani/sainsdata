@@ -10,6 +10,7 @@ import { api } from '@/lib/api'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { UsersTab } from '@/components/dashboard/UsersTab'
+import { AuditLogTab } from '@/components/dashboard/AuditLogTab'
 
 interface Stats {
   sections: number
@@ -102,6 +103,7 @@ export function Dashboard() {
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="instrumen">Instrumen</TabsTrigger>
             {isSudo && <TabsTrigger value="users">Manajemen User</TabsTrigger>}
+            {isSudo && <TabsTrigger value="auditlog">Audit Log</TabsTrigger>}
             {isSudo && <TabsTrigger value="settings">Pengaturan</TabsTrigger>}
           </TabsList>
 
@@ -132,6 +134,12 @@ export function Dashboard() {
           {isSudo && (
             <TabsContent value="users">
               <UsersTab />
+            </TabsContent>
+          )}
+
+          {isSudo && (
+            <TabsContent value="auditlog">
+              <AuditLogTab />
             </TabsContent>
           )}
 
