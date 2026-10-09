@@ -90,7 +90,7 @@ export function Footer() {
 
         <div className="mt-8 flex flex-col gap-2 border-t border-border pt-6 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
           <p>
-            © {currentYear} {institution.nama} — Fakultas Ilmu Komputer
+            © {currentYear} {institution.nama} - Fakultas Ilmu Komputer
           </p>
           <p>
             Akreditasi Institusi {institution.statusAkreditasi} · {institution.statusAkreditasiSk}

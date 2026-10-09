@@ -51,7 +51,7 @@ export function Home() {
           </h1>
 
           <p className="mt-5 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-            Portal resmi Sistem Penjaminan Mutu Internal Universitas Saintek Muhammadiyah —
+            Portal resmi Sistem Penjaminan Mutu Internal Universitas Saintek Muhammadiyah -
             seluruh standar mutu, kebijakan, dan dokumen akreditasi tersusun rapi dalam satu
             tempat. Portal ini menyajikan informasi terintegrasi terkait pendidikan, penelitian,
             pengabdian kepada masyarakat, SPMI, serta tata kelola Program Studi Sains Data
@@ -124,7 +124,7 @@ export function Home() {
             <span className="text-muted-foreground">
               Akreditasi Institusi:{' '}
               <span className="font-medium text-foreground">{institution.statusAkreditasi}</span>{' '}
-              — {institution.statusAkreditasiSk}, berlaku hingga{' '}
+              - {institution.statusAkreditasiSk}, berlaku hingga{' '}
               {institution.statusAkreditasiBerlaku}.
             </span>
             <Link

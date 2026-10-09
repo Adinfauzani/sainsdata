@@ -74,7 +74,7 @@ function RowCells({
       </td>
       <td className="border border-border px-3 py-2.5 align-top leading-relaxed">{indikator}</td>
       <td className="border border-border px-3 py-2.5 align-top leading-relaxed break-words">
-        {penjelasanProdi || <span className="text-muted-foreground">—</span>}
+        {penjelasanProdi || <span className="text-muted-foreground">-</span>}
       </td>
       <td className="border border-border px-3 py-2.5 align-top whitespace-nowrap">{namaFile}</td>
       <td className="border border-border px-3 py-2.5 align-top">{deskripsi}</td>
@@ -530,7 +530,7 @@ export function InstrumenTable({ mode }: { mode: 'public' | 'admin' }) {
                               Tambah
                             </Button>
                           ) : (
-                            <span className="text-muted-foreground">—</span>
+                            <span className="text-muted-foreground">-</span>
                           )}
                         </td>
                       </tr>

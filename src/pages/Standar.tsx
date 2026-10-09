@@ -7,7 +7,7 @@ export function Standar() {
       <PageHeader
         eyebrow="Akreditasi"
         title="Instrumen Akreditasi Program Studi Sarjana"
-        description="Portal resmi Sistem Penjaminan Mutu Internal Universitas Saintek Muhammadiyah — seluruh standar mutu, kebijakan, dan dokumen akreditasi tersusun rapi dalam satu tempat."
+        description="Portal resmi Sistem Penjaminan Mutu Internal Universitas Saintek Muhammadiyah - seluruh standar mutu, kebijakan, dan dokumen akreditasi tersusun rapi dalam satu tempat."
       />
       <InstrumenTable mode="public" />
     </>

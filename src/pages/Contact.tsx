@@ -120,7 +120,7 @@ export function Contact() {
           </div>
 
           <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
-            Kampus {institution.nama} — {institution.alamat}.
+            Kampus {institution.nama} - {institution.alamat}.
           </p>
         </section>
       </div>

@@ -104,7 +104,7 @@ export async function deleteStoredFile(fileUrl: unknown): Promise<void> {
       await del(fileUrl)
     }
   } catch {
-    // file telah tidak ada — abaikan
+    // file telah tidak ada - abaikan
   }
 }
 

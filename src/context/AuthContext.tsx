@@ -43,7 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await api('/api/auth/logout', { method: 'POST' })
     } catch {
-      // token mungkin sudah kedaluwarsa — tetap bersihkan di sisi klien
+      // token mungkin sudah kedaluwarsa - tetap bersihkan di sisi klien
     }
     setToken(null)
     setAdmin(null)
