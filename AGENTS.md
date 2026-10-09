@@ -99,25 +99,33 @@ Routes (all implemented, plus a `*` catch-all 404 rendered in Indonesian):
   Rows are hierarchical: masters are `{ no, id }` (displayed `1.a`); there are
   **no placeholder children** — children are admin-added Bukti Dokumen
   entries, so a row only gets a chevron after its first child exists.
-  **CRUD split**: master rows have only a text **Tambah** button (admin only)
-  which opens a metadata dialog (fields Kriteria / Sub Kriteria / Indikator /
-  Nama File / Deskripsi / Link → Drive) and on save POSTs a child to the API
-  (child_no = max+1; `DokumenUpload` in `types.ts` holds
-  `kriteria`/`subKriteria`/`indikator`/`namaFile`/`deskripsi`/`link`).
-  Child rows: Aksi cell is a single non-wrapping horizontal row — icon-only
-  chain button (lucide `Link`, aliased `LinkIcon`) opens `doc.link` (else
-  `/spmi`), then icon-only **View File** (lucide `Eye`, disabled until a file
-  exists → opens `DocPreviewDialog`: `.docx` rendered in-place via
-  lazy-loaded `docx-preview` (`renderAsync`), `.pdf`/`.txt`/`.csv` in an
-  `<iframe>`, other formats show a fallback note; footer has Tutup + Download
-  using the `download` attr on the server `fileUrl`), then (admin only) Del
-  (DELETE via API, also deletes the stored file), Update (reopens the dialog
-  prefilled, PUTs `doc` + syncs child `subKriteria`/`indikator`) and Upload (a
-  hidden `<input type="file" accept=".pdf,.doc,.docx,.txt,…">` behind a
-  label-button — multipart POST to `/api/instrumen/upload`, stores the file in
-  `server/uploads/` and sets `fileName`/`fileUrl` on the child). All mutations
-  go through the API (persisted to Neon) and reload the table afterward;
-  they're gated behind `useAuth().admin` — public visitors see the table
+  **CRUD split**: the instrumen table is a shared component
+  `src/components/InstrumenTable.tsx` used by **two** pages via a `mode` prop:
+  - `mode="public"` — `/akreditasi` (`pages/Standar.tsx`, no auth gating). Aksi
+    cell has **no buttons except a single View File (Eye)** icon that opens
+    `DocPreviewDialog` (disabled until a file exists). No Tambah on masters,
+    no link/Del/Update/Upload.
+  - `mode="admin"` — `/admin` dashboard (`pages/Admin.tsx`, authenticated
+    route). Aksi cell is a single non-wrapping horizontal row: master rows have
+    a text **Tambah** button opening a metadata dialog (fields Kriteria / Sub
+    Kriteria / Indikator / Nama File / Deskripsi / Link → Drive, saved as a
+    POST → child_no = max+1; `DokumenUpload` in `types.ts` holds
+    `kriteria`/`subKriteria`/`indikator`/`namaFile`/`deskripsi`/`link`);
+    child rows show an icon-only chain button (lucide `Link`, aliased
+    `LinkIcon`) opening `doc.link` (else `/spmi`), icon-only **View File**
+    (lucide `Eye`, disabled until a file exists → opens `DocPreviewDialog`:
+    `.docx` rendered in-place via lazy-loaded `docx-preview` (`renderAsync`),
+    `.pdf`/`.txt`/`.csv` in an `<iframe>`, other formats show a fallback note;
+    footer has Tutup + Download using the `download` attr on the server
+    `fileUrl`), then Del (DELETE via API, also deletes the stored file),
+    Update (reopens the dialog prefilled, PUTs `doc` + syncs child
+    `subKriteria`/`indikator`) and Upload (a hidden
+    `<input type="file" accept=".pdf,.doc,.docx,.txt,…">` behind a
+    label-button — multipart POST to `/api/instrumen/upload`, stores the file
+    and sets `fileName`/`fileUrl` on the child).
+  All mutations go through the API (persisted to Neon) and reload the table
+  afterward; the whole admin cluster is gated behind `canEdit =
+  (mode === 'admin' && useAuth().admin)` — public visitors see the table
   read-only. Nama File column shows `doc.namaFile` (empty on masters;
   uploading a file does NOT touch this column — `fileName` is only used by the
   preview dialog); Deskripsi shows `doc.deskripsi`. Child rows display
