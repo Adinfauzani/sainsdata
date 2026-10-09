@@ -1,5 +1,6 @@
 export type DocumentStatus = 'Berlaku' | 'Revisi' | 'Draft'
 export type StandardStatus = 'Tercapai' | 'Sesuai' | 'Dalam Evaluasi'
+export type UserRole = 'sudo' | 'admin' | 'user'
 
 export interface TreeNode {
   id: string
@@ -123,4 +124,19 @@ export interface InstrumenSection {
   no: number
   nama: string
   rows: InstrumenRow[]
+}
+
+export interface User {
+  id: number
+  email: string
+  username: string
+  role: UserRole
+  created_at: string
+}
+
+export interface AuthUser {
+  id: number
+  email: string
+  username: string
+  role: UserRole
 }

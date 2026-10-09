@@ -19,5 +19,5 @@
     "noUnusedParameters": true,
     "erasableSyntaxOnly": true
   },
-  "include": ["server/**/*.ts", "api/**/*.ts", "api/_lib/**/*.ts"]
+  "include": ["server/**/*.ts", "src/api/**/*.ts", "src/api/_lib/**/*.ts"]
 }

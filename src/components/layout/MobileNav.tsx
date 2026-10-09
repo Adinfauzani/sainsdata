@@ -10,7 +10,9 @@ import { spmiTreeNodes } from '@/data/treeNodes'
 const navLinks = [
   { to: '/', label: 'Home' },
   { to: '/profile', label: 'Profile' },
+  { to: '/spmi', label: 'SPMI' },
   { to: '/akreditasi', label: 'Akreditasi' },
+  { to: '/data-dokumen', label: 'Data dan Dokumen' },
   { to: '/contact', label: 'Contact' },
 ]
 
@@ -50,9 +52,9 @@ export function MobileNav({ open, onOpenChange }: MobileNavProps) {
             </NavLink>
           ))}
 
-          {admin ? (
+          {admin && (admin.role === 'admin' || admin.role === 'sudo') ? (
             <NavLink
-              to="/admin"
+              to="/dashboard"
               onClick={close}
               className={({ isActive }) =>
                 cn(

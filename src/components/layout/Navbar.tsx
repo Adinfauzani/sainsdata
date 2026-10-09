@@ -12,6 +12,9 @@ import type { TreeNode } from '@/types'
 const navLinks = [
   { to: '/', label: 'Home' },
   { to: '/profile', label: 'Profile' },
+  { to: '/spmi', label: 'SPMI' },
+  { to: '/akreditasi', label: 'Akreditasi' },
+  { to: '/data-dokumen', label: 'Data dan Dokumen' },
   { to: '/contact', label: 'Contact' },
 ]
 
@@ -115,6 +118,18 @@ export function Navbar() {
           </NavLink>
 
           <NavLink
+            to="/data-dokumen"
+            className={({ isActive }) =>
+              cn(
+                'rounded-md px-3 py-2 text-sm font-medium transition-colors duration-150',
+                isActive ? 'text-primary' : 'text-foreground/80 hover:text-foreground'
+              )
+            }
+          >
+            Data dan Dokumen
+          </NavLink>
+
+          <NavLink
             to="/contact"
             className={({ isActive }) =>
               cn(
@@ -126,10 +141,10 @@ export function Navbar() {
             Contact
           </NavLink>
 
-          {admin ? (
+          {admin && (admin.role === 'admin' || admin.role === 'sudo') ? (
             <>
               <NavLink
-                to="/admin"
+                to="/dashboard"
                 className={({ isActive }) =>
                   cn(
                     'rounded-md px-3 py-2 text-sm font-medium transition-colors duration-150',

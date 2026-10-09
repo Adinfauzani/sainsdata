@@ -6,7 +6,7 @@ import {
   pool,
   UPLOAD_ALLOWED,
   UPLOAD_MAX_BYTES,
-} from '../../server/handler'
+} from '../../lib/api-handler'
 
 export default async function handler(req: Request): Promise<Response> {
   const admin = await adminFromToken(bearerToken(req))
@@ -35,14 +35,24 @@ export default async function handler(req: Request): Promise<Response> {
   )
   if (!childRes.rows[0]) return json({ error: 'Baris tidak ditemukan' }, 404)
 
-  const storedName = `${crypto.randomUUID()}${ext}`
-  const blob = await put(storedName, file, {
-    access: 'public',
-    addRandomSuffix: false,
-    contentType: file.type || undefined,
-  })
+  let fileUrl: string
+  if (process.env.BLOB_READ_WRITE_TOKEN) {
+    const storedName = `${crypto.randomUUID()}${ext}`
+    const blob = await put(storedName, file, {
+      access: 'public',
+      addRandomSuffix: false,
+      contentType: file.type || undefined,
+    })
+    fileUrl = blob.url
+  } else {
+    const storedName = `${crypto.randomUUID()}${ext}`
+    const uploadsDir = `${process.cwd()}/server/uploads`
+    const { writeFile } = await import('node:fs/promises')
+    const arrayBuffer = await file.arrayBuffer()
+    await writeFile(`${uploadsDir}/${storedName}`, new Uint8Array(arrayBuffer))
+    fileUrl = `/uploads/${storedName}`
+  }
 
-  const fileUrl = blob.url
   await pool.query(
     `UPDATE instrumen_children SET file_name = $4, file_url = $5
      WHERE section_no = $1 AND row_id = $2 AND child_no = $3`,

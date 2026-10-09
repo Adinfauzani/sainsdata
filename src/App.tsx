@@ -1,16 +1,26 @@
 import { useEffect } from 'react'
-import { Route, Routes, useLocation } from 'react-router-dom'
+import {
+  Route,
+  Routes,
+  useLocation,
+  Navigate,
+} from 'react-router-dom'
+
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { Navbar } from '@/components/layout/Navbar'
 import { Footer } from '@/components/layout/Footer'
+
 import { Home } from '@/pages/Home'
 import { Profile } from '@/pages/Profile'
 import { Spmi } from '@/pages/Spmi'
-import { Standar } from '@/pages/Standar'
+import { Akreditasi } from '@/pages/Akreditasi'
+import { DataDokumen } from '@/pages/DataDokumen'
 import { Contact } from '@/pages/Contact'
 import { Login } from '@/pages/Login'
-import { Admin } from '@/pages/Admin'
+import { Dashboard } from '@/pages/Dashboard'
+
 import { AuthProvider } from '@/context/AuthContext'
+import { useAuth } from '@/context/auth'
 
 function ScrollToTop() {
   const { pathname } = useLocation()
@@ -25,12 +35,28 @@ function ScrollToTop() {
 function NotFound() {
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-24 text-center sm:px-6">
-      <p className="font-mono text-xs font-semibold tracking-widest text-primary uppercase">404</p>
-      <h1 className="mt-3 text-2xl font-semibold tracking-tight">Halaman tidak ditemukan</h1>
+      <p className="font-mono text-xs font-semibold tracking-widest text-primary uppercase">
+        404
+      </p>
+      <h1 className="mt-3 text-2xl font-semibold tracking-tight">
+        Halaman tidak ditemukan
+      </h1>
       <p className="mt-3 text-sm text-muted-foreground">
         Halaman yang Anda tuju tidak tersedia di portal ini.
       </p>
     </div>
+  )
+}
+
+function ProtectedDashboard() {
+  const { admin, loading } = useAuth()
+
+  if (loading) return null
+
+  return admin ? (
+    <Dashboard />
+  ) : (
+    <Navigate to="/login" replace />
   )
 }
 
@@ -40,19 +66,26 @@ export default function App() {
       <TooltipProvider>
         <div className="flex min-h-dvh flex-col">
           <Navbar />
+
           <ScrollToTop />
+
           <main className="flex-1">
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/spmi" element={<Spmi />} />
-              <Route path="/akreditasi" element={<Standar />} />
+              <Route path="/akreditasi" element={<Akreditasi />} />
+              <Route path="/data-dokumen" element={<DataDokumen />} />
               <Route path="/contact" element={<Contact />} />
               <Route path="/login" element={<Login />} />
-              <Route path="/admin" element={<Admin />} />
+              <Route
+                path="/dashboard"
+                element={<ProtectedDashboard />}
+              />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </main>
+
           <Footer />
         </div>
       </TooltipProvider>

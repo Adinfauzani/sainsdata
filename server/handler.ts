@@ -33,7 +33,7 @@ export function bearerToken(req: Request): string | null {
 export async function adminFromToken(token: string | null) {
   if (!token) return null
   const { rows } = await pool.query(
-    `SELECT a.id, a.username FROM sessions s
+    `SELECT a.id, a.email, a.username, a.role FROM sessions s
      JOIN admins a ON a.id = s.admin_id
      WHERE s.token = $1 AND s.expires_at > now()`,
     [token]
@@ -83,24 +83,24 @@ export { UPLOAD_ALLOWED, UPLOAD_MAX_BYTES }
 export async function handleApi(req: Request, path: string): Promise<Response | null> {
   if (path === '/api/auth/login' && req.method === 'POST') {
     const body = await readJson(req)
-    const username = typeof body.username === 'string' ? body.username.trim() : ''
+    const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : ''
     const password = typeof body.password === 'string' ? body.password : ''
-    if (!username || !password) return json({ error: 'Username dan password wajib diisi' }, 400)
+    if (!email || !password) return json({ error: 'Email dan password wajib diisi' }, 400)
 
     const { rows } = await pool.query(
-      'SELECT id, username, password_hash FROM admins WHERE username = $1',
-      [username]
+      'SELECT id, email, username, password_hash, role FROM admins WHERE email = $1',
+      [email]
     )
     const admin = rows[0]
     const valid = admin ? await bcrypt.compare(password, admin.password_hash) : false
-    if (!valid) return json({ error: 'Username atau password salah' }, 401)
+    if (!valid) return json({ error: 'Email atau password salah' }, 401)
 
     const token = crypto.randomUUID()
     await pool.query(
       'INSERT INTO sessions (token, admin_id, expires_at) VALUES ($1, $2, now() + $3 * interval \'1 millisecond\')',
       [token, admin.id, 7 * 24 * 60 * 60 * 1000]
     )
-    return json({ token, admin: { username: admin.username } })
+    return json({ token, admin: { id: admin.id, email: admin.email, username: admin.username, role: admin.role } })
   }
 
   if (path === '/api/auth/logout' && req.method === 'POST') {
@@ -112,7 +112,7 @@ export async function handleApi(req: Request, path: string): Promise<Response | 
   if (path === '/api/auth/me' && req.method === 'GET') {
     const admin = await adminFromToken(bearerToken(req))
     if (!admin) return json({ error: 'Belum login' }, 401)
-    return json({ admin: { username: admin.username } })
+    return json({ admin: { id: admin.id, email: admin.email, username: admin.username, role: admin.role } })
   }
 
   if (path === '/api/stats' && req.method === 'GET') {

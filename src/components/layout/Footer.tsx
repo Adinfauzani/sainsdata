@@ -10,6 +10,7 @@ const columns = [
       { to: '/profile', label: 'Profile' },
       { to: '/spmi', label: 'SPMI' },
       { to: '/akreditasi', label: 'Akreditasi' },
+      { to: '/data-dokumen', label: 'Data dan Dokumen' },
       { to: '/contact', label: 'Contact' },
     ],
   },

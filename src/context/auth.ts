@@ -1,13 +1,10 @@
 import { createContext, useContext } from 'react'
-
-export interface Admin {
-  username: string
-}
+import type { AuthUser } from '@/types'
 
 export interface AuthContextValue {
-  admin: Admin | null
+  admin: AuthUser | null
   loading: boolean
-  login: (username: string, password: string) => Promise<void>
+  login: (email: string, password: string) => Promise<void>
   logout: () => Promise<void>
 }
 
@@ -18,3 +15,5 @@ export function useAuth() {
   if (!ctx) throw new Error('useAuth harus dipakai di dalam AuthProvider')
   return ctx
 }
+
+export type { AuthUser }

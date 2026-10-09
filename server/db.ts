@@ -25,18 +25,21 @@ export async function migrate(): Promise<void> {
 export async function seed(): Promise<void> {
   const adminCount = await pool.query('SELECT count(*)::int AS n FROM admins')
   if (adminCount.rows[0].n === 0) {
-    const username = 'admin'
+    const email = 'sudo@saintekmu.ac.id'
+    const username = 'sudo'
     const password = process.env.ADMIN_PASSWORD ?? 'admin123'
     const hash = bcrypt.hashSync(password, 10)
-    await pool.query('INSERT INTO admins (username, password_hash) VALUES ($1, $2)', [
+    await pool.query('INSERT INTO admins (email, username, password_hash, role) VALUES ($1, $2, $3, $4)', [
+      email,
       username,
       hash,
+      'sudo'
     ])
-    console.log(`[seed] admin dibuat — username: ${username}, password: ${password}`)
+    console.log(`[seed] sudo admin dibuat — email: ${email}, password: ${password}`)
   } else {
     const defaultAdmin = await pool.query(
-      'SELECT id, password_hash FROM admins WHERE username = $1 ORDER BY id LIMIT 1',
-      ['admin']
+      'SELECT id, password_hash FROM admins WHERE email = $1 ORDER BY id LIMIT 1',
+      ['sudo@saintekmu.ac.id']
     )
     const existing = defaultAdmin.rows[0]
     if (existing && !existing.password_hash.startsWith('$2')) {

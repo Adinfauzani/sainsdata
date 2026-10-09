@@ -1,4 +1,4 @@
-import { handleApi, json } from '../../server/handler'
+import { handleApi, json } from '../../lib/api-handler'
 
 export async function route(req: Request): Promise<Response> {
   const path = new URL(req.url).pathname

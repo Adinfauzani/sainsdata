@@ -9,20 +9,20 @@ import { useAuth } from '@/context/auth'
 export function Login() {
   const { admin, loading, login } = useAuth()
   const navigate = useNavigate()
-  const [username, setUsername] = useState('')
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
-  if (!loading && admin) return <Navigate to="/admin" replace />
+  if (!loading && admin) return <Navigate to="/dashboard" replace />
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
     setError(null)
     setSubmitting(true)
     try {
-      await login(username, password)
-      navigate('/admin', { replace: true })
+      await login(email, password)
+      navigate('/dashboard', { replace: true })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Gagal masuk')
     } finally {
@@ -39,20 +39,21 @@ export function Login() {
           </span>
           <CardTitle className="text-xl">Masuk ke Dashboard</CardTitle>
           <CardDescription>
-            Gunakan akun admin Anda untuk mengelola data akreditasi.
+            Gunakan email dan password admin Anda untuk mengelola data akreditasi.
           </CardDescription>
         </CardHeader>
 
         <CardContent>
           <form className="space-y-4" onSubmit={handleSubmit}>
             <div className="space-y-1.5">
-              <Label htmlFor="username">Username</Label>
+              <Label htmlFor="email">Email</Label>
               <Input
-                id="username"
-                autoComplete="username"
-                value={username}
-                onChange={(event) => setUsername(event.target.value)}
-                placeholder="admin"
+                id="email"
+                type="email"
+                autoComplete="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                placeholder="admin@saintekmu.ac.id"
                 required
               />
             </div>

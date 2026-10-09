@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { AuthContext, type Admin } from '@/context/auth'
+import { AuthContext, type AuthUser } from '@/context/auth'
 import { api, getToken, setToken } from '@/lib/api'
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [admin, setAdmin] = useState<Admin | null>(null)
+  const [admin, setAdmin] = useState<AuthUser | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -15,7 +15,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return
       }
       try {
-        const res = await api<{ admin: Admin }>('/api/auth/me')
+        const res = await api<{ admin: AuthUser }>('/api/auth/me')
         if (!cancelled) setAdmin(res.admin)
       } catch {
         setToken(null)
@@ -30,10 +30,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  const login = useCallback(async (username: string, password: string) => {
-    const res = await api<{ token: string; admin: Admin }>('/api/auth/login', {
+  const login = useCallback(async (email: string, password: string) => {
+    const res = await api<{ token: string; admin: AuthUser }>('/api/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ username, password }),
+      body: JSON.stringify({ email, password }),
     })
     setToken(res.token)
     setAdmin(res.admin)

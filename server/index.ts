@@ -6,7 +6,7 @@ import {
   pool,
   UPLOAD_ALLOWED,
   UPLOAD_MAX_BYTES,
-} from './handler'
+} from '../src/lib/api-handler'
 import { migrate, seed } from './db'
 
 const port = Number(process.env.PORT ?? 8787)

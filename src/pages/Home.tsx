@@ -47,12 +47,15 @@ export function Home() {
           </Badge>
 
           <h1 className="mt-5 max-w-3xl text-3xl font-semibold tracking-tight text-balance sm:text-5xl sm:leading-[1.1]">
-            Pusat Data dan Informasi Akreditasi
+            Pusat Data dan Informasi Program Studi Sains Data
           </h1>
 
           <p className="mt-5 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-            Portal resmi Sistem Penjaminan Mutu Internal {institution.nama} — seluruh standar
-            mutu, kebijakan, dan dokumen akreditasi tersusun rapi dalam satu tempat.
+            Portal resmi Sistem Penjaminan Mutu Internal Universitas Saintek Muhammadiyah —
+            seluruh standar mutu, kebijakan, dan dokumen akreditasi tersusun rapi dalam satu
+            tempat. Portal ini menyajikan informasi terintegrasi terkait pendidikan, penelitian,
+            pengabdian kepada masyarakat, SPMI, serta tata kelola Program Studi Sains Data
+            secara sistematis, terbuka, dan mudah diakses.
           </p>
 
           <div className="mt-8 flex flex-wrap items-center gap-3">
