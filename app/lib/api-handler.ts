@@ -141,6 +141,35 @@ export async function handleApi(req: Request, path: string): Promise<Response | 
     return json({ ok: true })
   }
 
+  if (path === '/api/auth/register' && req.method === 'POST') {
+    const body = await readJson(req)
+    const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : ''
+    const username = typeof body.username === 'string' ? body.username.trim() : ''
+    const password = typeof body.password === 'string' ? body.password : ''
+    if (!email || !username || !password) return json({ error: 'Email, username, dan password wajib diisi' }, 400)
+    if (password.length < 8) return json({ error: 'Password minimal 8 karakter' }, 400)
+
+    const existing = await pool.query('SELECT id FROM admins WHERE email = $1 OR username = $2', [email, username])
+    if (existing.rows.length > 0) return json({ error: 'Email atau username sudah digunakan' }, 409)
+
+    // Check admin limit (max 3 admins) - new registrations get 'user' role
+    const adminCount = await pool.query("SELECT count(*)::int AS total FROM admins WHERE role IN ('admin', 'sudo')")
+    if (adminCount.rows[0].total >= 3) {
+      // Only allow 'user' role for new registrations
+    }
+
+    const hash = await bcrypt.hash(password, 12)
+    const res = await pool.query(
+      'INSERT INTO admins (email, username, password_hash, role) VALUES ($1, $2, $3, $4) RETURNING id, email, username, role, is_active, created_at',
+      [email, username, hash, 'user']
+    )
+    const newUser = res.rows[0]
+
+    await logAudit(newUser.id, 'USER_REGISTER', 'user', String(newUser.id), null, newUser, req)
+
+    return json({ ok: true, user: newUser }, 201)
+  }
+
   if (path === '/api/auth/me' && req.method === 'GET') {
     const admin = await adminFromToken(bearerToken(req))
     if (!admin) return json({ error: 'Belum login' }, 401)
