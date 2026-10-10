@@ -4,51 +4,126 @@ import { PageHeader } from '@/components/PageHeader'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Download, FileText, Search } from 'lucide-react'
-import { useState } from 'react'
-import { spmiDocuments } from '@/data/spmi'
-import { supportingDocuments } from '@/data/documents'
-import { standards, standardGroups } from '@/data/standards'
+import { Download, FileText, Search, Loader2 } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { api } from '@/lib/api'
+import type { InstrumenSection, InstrumenChild } from '@/types'
 
-const allDocuments = [
-  ...spmiDocuments.map(d => ({ ...d, source: 'SPMI' as const })),
-  ...supportingDocuments.map(d => ({ ...d, source: 'Dokumen Pendukung' as const })),
-]
-
-const allStandards = standards
+interface DocumentItem {
+  id: string
+  judul: string
+  deskripsi: string
+  tahun: number
+  nomor: string
+  status: string
+  jenis: string
+  fileType: string
+  kriteria: string
+  subKriteria: string
+  indikator: string
+  fileName?: string
+  fileUrl?: string
+  link?: string
+}
 
 export default function DataDokumenAdmin() {
   const [searchQuery, setSearchQuery] = useState('')
-  const [filterType, setFilterType] = useState<'all' | 'spmi' | 'pendukung' | 'standar'>('all')
+  const [filterType, setFilterType] = useState<'all' | 'dokumen' | 'standar'>('all')
   const [filterStatus, setFilterStatus] = useState<string>('all')
+  const [documents, setDocuments] = useState<DocumentItem[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  const filteredDocs = allDocuments.filter(doc => {
+  useEffect(() => {
+    async function loadDocuments() {
+      try {
+        setLoading(true)
+        const res = await api<{ sections: InstrumenSection[] }>('/api/instrumen')
+        const docs: DocumentItem[] = []
+
+        res.sections.forEach(section => {
+          section.rows.forEach(row => {
+            row.children?.forEach((child: InstrumenChild) => {
+              if (child.doc) {
+                const doc = child.doc
+                docs.push({
+                  id: `${section.no}-${row.id}-${child.no}`,
+                  judul: doc.namaFile || `Dokumen ${child.no}`,
+                  deskripsi: doc.deskripsi || doc.indikator || '',
+                  tahun: new Date().getFullYear(),
+                  nomor: `${section.no}.${row.no}.${child.no}`,
+                  status: 'Berlaku',
+                  jenis: 'Instrumen Akreditasi',
+                  fileType: doc.namaFile?.split('.').pop()?.toUpperCase() || 'LINK',
+                  kriteria: section.nama,
+                  subKriteria: child.subKriteria,
+                  indikator: child.indikator,
+                  fileName: child.fileName,
+                  fileUrl: child.fileUrl,
+                  link: doc.link,
+                })
+              } else if (child.fileName || child.fileUrl) {
+                docs.push({
+                  id: `${section.no}-${row.id}-${child.no}`,
+                  judul: child.fileName || `File ${child.no}`,
+                  deskripsi: child.indikator || '',
+                  tahun: new Date().getFullYear(),
+                  nomor: `${section.no}.${row.no}.${child.no}`,
+                  status: 'Berlaku',
+                  jenis: 'File Terunggah',
+                  fileType: child.fileName?.split('.').pop()?.toUpperCase() || 'FILE',
+                  kriteria: section.nama,
+                  subKriteria: child.subKriteria,
+                  indikator: child.indikator,
+                  fileName: child.fileName,
+                  fileUrl: child.fileUrl,
+                })
+              }
+            })
+          })
+        })
+
+        setDocuments(docs)
+        setError(null)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Gagal memuat data')
+        setDocuments([])
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadDocuments()
+  }, [])
+
+  const filteredDocs = documents.filter(doc => {
     const matchesSearch = doc.judul.toLowerCase().includes(searchQuery.toLowerCase()) ||
       doc.deskripsi.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      doc.nomor.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesType = filterType === 'all' || 
-      (filterType === 'spmi' && doc.source === 'SPMI') ||
-      (filterType === 'pendukung' && doc.source === 'Dokumen Pendukung')
+      doc.nomor.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      doc.kriteria.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      doc.subKriteria.toLowerCase().includes(searchQuery.toLowerCase())
+    const matchesType = filterType === 'all' || filterType === 'dokumen'
     const matchesStatus = filterStatus === 'all' || doc.status === filterStatus
     return matchesSearch && matchesType && matchesStatus
   })
 
-  const filteredStandards = allStandards.filter(std => {
-    const matchesSearch = std.nama.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      std.kode.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      std.deskripsi.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesType = filterType === 'all' || filterType === 'standar'
-    return matchesSearch && matchesType
-  })
+  const statuses = ['all', 'Berlaku', 'Revisi', 'Draft']
 
-  const statuses = ['all', 'Berlaku', 'Revisi', 'Draft', 'Tercapai', 'Sesuai', 'Dalam Evaluasi']
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="size-8 animate-spin text-primary" />
+        <span className="sr-only">Memuat data...</span>
+      </div>
+    )
+  }
 
   return (
     <>
       <PageHeader
         eyebrow="Data dan Dokumen"
-        title="Repositori Dokumen dan Standar (Admin)"
-        description="Manajemen dokumen SPMI, dokumen pendukung akreditasi, dan standar mutu program studi Sains Data."
+        title="Repositori Dokumen (Admin)"
+        description="Dokumen pendukung instrumen akreditasi dari database."
       />
 
       <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6">
@@ -57,7 +132,7 @@ export default function DataDokumenAdmin() {
             <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <input
               type="text"
-              placeholder="Cari dokumen, standar, nomor..."
+              placeholder="Cari dokumen, kriteria, sub kriteria, nomor..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-border rounded-lg bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
@@ -69,10 +144,8 @@ export default function DataDokumenAdmin() {
               onChange={e => setFilterType(e.target.value as typeof filterType)}
               className="px-3 py-2 border border-border rounded-lg bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
             >
-              <option value="all">Semua Jenis</option>
-              <option value="spmi">Dokumen SPMI</option>
-              <option value="pendukung">Dokumen Pendukung</option>
-              <option value="standar">Standar Mutu</option>
+              <option value="all">Semua</option>
+              <option value="dokumen">Dokumen Instrumen</option>
             </select>
             <select
               value={filterStatus}
@@ -87,8 +160,13 @@ export default function DataDokumenAdmin() {
           </div>
         </div>
 
-        {filterType !== 'standar' && (
-          <section className="mb-10" aria-labelledby="dokumen-heading">
+        {error ? (
+          <div className="text-center py-12 text-destructive">
+            <FileText className="mx-auto size-12 mb-2 opacity-50" />
+            <p>{error}</p>
+          </div>
+        ) : (
+          <section aria-labelledby="dokumen-heading">
             <h2 id="dokumen-heading" className="text-xs font-semibold tracking-widest text-primary uppercase mb-4">
               Dokumen ({filteredDocs.length})
             </h2>
@@ -99,11 +177,11 @@ export default function DataDokumenAdmin() {
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
                         <span className="text-[11px] font-medium tracking-wider text-muted-foreground uppercase">
-                          {doc.source}
+                          {doc.kriteria}
                         </span>
                         <h3 className="mt-1 font-semibold text-sm line-clamp-2">{doc.judul}</h3>
                       </div>
-                      <Badge variant={doc.status === 'Berlaku' ? 'secondary' : doc.status === 'Revisi' ? 'destructive' : doc.status === 'Draft' ? 'outline' : 'outline'}>
+                      <Badge variant={doc.status === 'Berlaku' ? 'secondary' : doc.status === 'Revisi' ? 'destructive' : 'outline'}>
                         {doc.status}
                       </Badge>
                     </div>
@@ -120,85 +198,42 @@ export default function DataDokumenAdmin() {
                         <dd className="font-mono tabular-nums">{doc.tahun}</dd>
                       </div>
                       <div className="flex gap-2">
-                        <dt className="text-muted-foreground shrink-0">Jenis</dt>
-                        <dd>{doc.jenis}</dd>
+                        <dt className="text-muted-foreground shrink-0">Kriteria</dt>
+                        <dd className="truncate">{doc.kriteria}</dd>
+                      </div>
+                      <div className="flex gap-2">
+                        <dt className="text-muted-foreground shrink-0">Sub Kriteria</dt>
+                        <dd className="truncate">{doc.subKriteria}</dd>
                       </div>
                       <div className="flex gap-2">
                         <dt className="text-muted-foreground shrink-0">Format</dt>
                         <dd className="font-mono">{doc.fileType}</dd>
                       </div>
                     </dl>
-                    <Button variant="outline" size="sm" className="mt-4 w-full" disabled>
-                      <Download className="size-3.5 mr-1.5" />
-                      Unduh
-                    </Button>
+                    {(doc.fileUrl || doc.link) && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="mt-4 w-full"
+                        onClick={() => window.open(doc.fileUrl || doc.link!, '_blank')}
+                      >
+                        <Download className="size-3.5 mr-1.5" />
+                        {doc.fileUrl ? 'Unduh File' : 'Buka Link'}
+                      </Button>
+                    )}
+                    {!doc.fileUrl && !doc.link && (
+                      <Button variant="outline" size="sm" className="mt-4 w-full" disabled>
+                        <Download className="size-3.5 mr-1.5" />
+                        Tidak Ada File/Link
+                      </Button>
+                    )}
                   </CardContent>
                 </Card>
               ))}
               {filteredDocs.length === 0 && (
                 <div className="col-span-full text-center py-12 text-muted-foreground">
                   <FileText className="mx-auto size-12 mb-2 opacity-50" />
-                  <p>Tidak ada dokumen yang cocok dengan filter.</p>
-                </div>
-              )}
-            </div>
-          </section>
-        )}
-
-        {(filterType === 'all' || filterType === 'standar') && (
-          <section aria-labelledby="standar-heading">
-            <h2 id="standar-heading" className="text-xs font-semibold tracking-widest text-primary uppercase mb-4">
-              Standar Mutu ({filteredStandards.length})
-            </h2>
-            <div className="space-y-3">
-              {standardGroups.map(group => {
-                const groupStandards = filteredStandards.filter(s => s.groupId === group.id)
-                if (groupStandards.length === 0) return null
-                return (
-                  <Card key={group.id}>
-                    <CardHeader>
-                      <h3 className="font-semibold">{group.nama}</h3>
-                      <p className="text-sm text-muted-foreground mt-1">{group.deskripsi}</p>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-2">
-                        {groupStandards.map(std => (
-                          <div key={std.id} className="rounded-lg border border-border p-4 hover:bg-muted/40 transition-colors">
-                            <div className="flex flex-wrap items-start justify-between gap-3">
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <span className="font-mono text-xs text-primary">{std.kode}</span>
-                                  <h4 className="font-semibold text-sm">{std.nama}</h4>
-                                  <Badge variant={std.status === 'Tercapai' ? 'secondary' : std.status === 'Sesuai' ? 'outline' : 'destructive'}>
-                                    {std.status}
-                                  </Badge>
-                                </div>
-                                <p className="mt-1 text-sm text-muted-foreground line-clamp-2">{std.deskripsi}</p>
-                              </div>
-                            </div>
-                            <div className="mt-3 flex flex-wrap gap-2">
-                              {std.indikator.slice(0, 3).map(ind => (
-                                <Badge key={ind.id} variant="outline" className="text-[11px]">
-                                  {ind.pernyataan.slice(0, 50)}…
-                                </Badge>
-                              ))}
-                              {std.indikator.length > 3 && (
-                                <Badge variant="outline" className="text-[11px]">
-                                  +{std.indikator.length - 3} indikator lainnya
-                                </Badge>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                )
-              })}
-              {filteredStandards.length === 0 && (
-                <div className="text-center py-12 text-muted-foreground">
-                  <FileText className="mx-auto size-12 mb-2 opacity-50" />
-                  <p>Tidak ada standar yang cocok dengan filter.</p>
+                  <p>Tidak ada dokumen di database.</p>
                 </div>
               )}
             </div>

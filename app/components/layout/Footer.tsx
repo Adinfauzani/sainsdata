@@ -1,40 +1,52 @@
 import Link from 'next/link'
-import { Mail, MapPin, Phone, Clock, Globe } from 'lucide-react'
+import { GraduationCap } from 'lucide-react'
 import { institution } from '@/data/profile'
 
-const columns = [
-  {
-    title: 'Navigasi',
-    links: [
-      { href: '/', label: 'Home' },
-      { href: '/profile', label: 'Profile' },
-      { href: '/spmi', label: 'SPMI' },
-      { href: '/akreditasi', label: 'Akreditasi' },
-      { href: '/contact', label: 'Contact' },
-    ],
-  },
+const navigation = [
+  { href: '/', label: 'Beranda' },
+  { href: '/profile', label: 'Profil Prodi' },
+  { href: '/spmi', label: 'SPMI' },
+  { href: '/akreditasi', label: 'Instrumen Akreditasi' },
+  { href: '/data-dokumen', label: 'Data Dokumen' },
+  { href: '/contact', label: 'Kontak' },
+]
+
+const footerLinks = [
+  { href: '/akreditasi', label: 'Standar Akreditasi' },
+  { href: '/spmi', label: 'Dokumen SPMI' },
+  { href: '/data-dokumen', label: 'Arsip Dokumen' },
 ]
 
 const currentYear = new Date().getFullYear()
 
 export function Footer() {
   return (
-    <footer className="border-t border-border bg-muted/40">
-      <div className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-6">
-        <div className="grid gap-8 md:grid-cols-[1.4fr_1fr_1.4fr]">
-          <div>
-            <p className="text-sm font-semibold tracking-tight">{institution.nama}</p>
-            <p className="mt-2 max-w-xs text-sm leading-relaxed text-muted-foreground">
+    <footer className="border-t border-border bg-muted/30">
+      <div className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-6 lg:px-8 xl:py-14">
+        <div className="grid gap-8 lg:grid-cols-4">
+          <div className="lg:col-span-2 space-y-4">
+            <p className="text-base font-semibold tracking-tight">{institution.nama}</p>
+            <p className="max-w-xs text-sm leading-relaxed text-muted-foreground">
               Pusat data dan informasi akreditasi Program Studi Sains Data, Fakultas Ilmu Komputer.
             </p>
+            <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1.5">
+                <GraduationCap className="size-3.5" aria-hidden />
+                Fakultas Ilmu Komputer
+              </span>
+              <span className="flex items-center gap-1.5">
+                <GraduationCap className="size-3.5" aria-hidden />
+                Program Studi Sains Data (S1)
+              </span>
+            </div>
           </div>
 
-          <nav aria-label="Tautan footer">
+          <nav aria-label="Navigasi portal">
             <p className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
-              {columns[0].title}
+              Portal
             </p>
             <ul className="mt-3 space-y-2">
-              {columns[0].links.map((link) => (
+              {navigation.map((link) => (
                 <li key={link.href}>
                   <Link
                     href={link.href}
@@ -49,45 +61,24 @@ export function Footer() {
 
           <div>
             <p className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
-              Kontak
+              Akses Cepat
             </p>
-            <ul className="mt-3 space-y-2.5 text-sm text-foreground/80">
-              <li className="flex items-start gap-2.5">
-                <MapPin className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden />
-                <span className="leading-relaxed">{institution.alamat}</span>
-              </li>
-              <li className="flex items-center gap-2.5">
-                <Phone className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-                <a href={`tel:${institution.telepon.replace(/[^0-9+]/g, '')}`} className="hover:text-primary">
-                  {institution.telepon}
-                </a>
-              </li>
-              <li className="flex items-center gap-2.5">
-                <Mail className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-                <a href={`mailto:${institution.email}`} className="hover:text-primary">
-                  {institution.email}
-                </a>
-              </li>
-              <li className="flex items-center gap-2.5">
-                <Globe className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-                <a
-                  href={institution.website}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="hover:text-primary"
-                >
-                  {institution.website.replace('https://', '')}
-                </a>
-              </li>
-              <li className="flex items-center gap-2.5">
-                <Clock className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-                <span>{institution.jamLayanan}</span>
-              </li>
+            <ul className="mt-3 space-y-2">
+              {footerLinks.map((link) => (
+                <li key={link.href}>
+                  <Link
+                    href={link.href}
+                    className="text-sm text-foreground/80 transition-colors hover:text-primary"
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
         </div>
 
-        <div className="mt-8 flex flex-col gap-2 border-t border-border pt-6 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+        <div className="mt-10 flex flex-col gap-2 border-t border-border pt-6 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
           <p>
             © {currentYear} {institution.nama} - Fakultas Ilmu Komputer
           </p>

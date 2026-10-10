@@ -1,18 +1,12 @@
 'use client'
 
 import { Fragment, useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
-import Link from 'next/link'
 import {
   ChevronDown,
   Download,
-  Eye,
-  Link as LinkIcon,
-  Pencil,
   Plus,
-  Trash2,
-  Upload,
 } from 'lucide-react'
-import { Button, buttonVariants } from '@/components/ui/button'
+import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
@@ -34,12 +28,23 @@ const columnLabels = [
   'Kriteria',
   'Sub Kriteria',
   'Indikator',
-  'Penjelasan Prodi',
   'Nama File',
   'Deskripsi',
-  'Aksi',
 ]
-const fileAccept = '.pdf,.doc,.docx,.txt,.rtf,.csv,.xls,.xlsx,.ppt,.pptx'
+
+const adminColumnLabels = [
+  'Penjelasan Prodi',
+]
+
+const columnWidths = {
+  'No': { width: '3.5rem' },
+  'Kriteria': { width: '10rem' },
+  'Sub Kriteria': { width: '12rem' },
+  'Indikator': { width: '18rem' },
+  'Nama File': { width: '10rem' },
+  'Deskripsi': { width: '14rem' },
+  'Penjelasan Prodi': { width: '16rem' },
+}
 
 type FormTarget =
   | { mode: 'add'; sectionNo: number; rowId: string }
@@ -55,7 +60,6 @@ interface RowCellsProps {
   kriteria: string
   subKriteria: string
   indikator: string
-  penjelasanProdi?: string
   namaFile?: string
   deskripsi?: string
 }
@@ -64,22 +68,18 @@ function RowCells({
   kriteria,
   subKriteria,
   indikator,
-  penjelasanProdi = '',
   namaFile = '',
   deskripsi = '',
 }: RowCellsProps) {
   return (
     <>
-      <td className="border border-border px-3 py-2.5 align-top">{kriteria}</td>
-      <td className="border border-border px-3 py-2.5 align-top whitespace-nowrap">
+      <td className="border border-border px-3 py-2.5 align-top" style={columnWidths.Kriteria}>{kriteria}</td>
+      <td className="border border-border px-3 py-2.5 align-top whitespace-nowrap" style={columnWidths['Sub Kriteria']}>
         {subKriteria}
       </td>
-      <td className="border border-border px-3 py-2.5 align-top leading-relaxed">{indikator}</td>
-      <td className="border border-border px-3 py-2.5 align-top leading-relaxed break-words">
-        {penjelasanProdi || <span className="text-muted-foreground">-</span>}
-      </td>
-      <td className="border border-border px-3 py-2.5 align-top whitespace-nowrap">{namaFile}</td>
-      <td className="border border-border px-3 py-2.5 align-top">{deskripsi}</td>
+      <td className="border border-border px-3 py-2.5 align-top leading-relaxed truncate" style={columnWidths.Indikator}>{indikator}</td>
+      <td className="border border-border px-3 py-2.5 align-top whitespace-nowrap" style={columnWidths['Nama File']}>{namaFile}</td>
+      <td className="border border-border px-3 py-2.5 align-top truncate" style={columnWidths.Deskripsi}>{deskripsi}</td>
     </>
   )
 }
@@ -358,21 +358,6 @@ export function InstrumenTable({ mode }: { mode: 'public' | 'admin' }) {
       body: JSON.stringify({ sectionNo, rowId, childNo, doc }),
     })
 
-  const delChild = (sectionNo: number, rowId: string, childNo: number) =>
-    api('/api/instrumen/children', {
-      method: 'DELETE',
-      body: JSON.stringify({ sectionNo, rowId, childNo }),
-    })
-
-  const uploadFile = (sectionNo: number, rowId: string, childNo: number, file: File) => {
-    const form = new FormData()
-    form.set('file', file)
-    form.set('sectionNo', String(sectionNo))
-    form.set('rowId', rowId)
-    form.set('childNo', String(childNo))
-    return api('/api/instrumen/upload', { method: 'POST', body: form })
-  }
-
   const saveDoc = (doc: DokumenUpload) => {
     if (!formTarget) return
     const add = formTarget.mode === 'add'
@@ -439,7 +424,7 @@ export function InstrumenTable({ mode }: { mode: 'public' | 'admin' }) {
           {loadError}
         </p>
       ) : null}
-      <table className="w-full min-w-[96rem] border-collapse text-sm">
+      <table className="w-full border-collapse text-sm" style={{ tableLayout: 'fixed' }}>
         <thead>
           <tr className="bg-muted">
             {columnLabels.map((label) => (
@@ -447,6 +432,17 @@ export function InstrumenTable({ mode }: { mode: 'public' | 'admin' }) {
                 key={label}
                 scope="col"
                 className="border border-border px-3 py-2.5 text-start text-xs font-semibold tracking-wider uppercase"
+                style={columnWidths[label as keyof typeof columnWidths]}
+              >
+                {label}
+              </th>
+            ))}
+            {mode === 'admin' && adminColumnLabels.map((label) => (
+              <th
+                key={label}
+                scope="col"
+                className="border border-border px-3 py-2.5 text-start text-xs font-semibold tracking-wider uppercase"
+                style={columnWidths[label as keyof typeof columnWidths]}
               >
                 {label}
               </th>
@@ -518,23 +514,31 @@ export function InstrumenTable({ mode }: { mode: 'public' | 'admin' }) {
                           kriteria={section.nama}
                           subKriteria={row.subKriteria}
                           indikator={row.indikator}
-                          penjelasanProdi={row.penjelasanProdi}
+                          namaFile=""
+                          deskripsi=""
                         />
-                        <td className="border border-border px-3 py-2.5 align-top">
-                          {canEdit ? (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              disabled={busy}
-                              onClick={() => setFormTarget({ mode: 'add', sectionNo: row.no, rowId: row.id })}
-                            >
-                              <Plus className="size-3.5" />
-                              Tambah
-                            </Button>
-                          ) : (
-                            <span className="text-muted-foreground">-</span>
-                          )}
-                        </td>
+                        {mode === 'admin' && (
+                          <>
+                            <td className="border border-border px-3 py-2.5 align-top leading-relaxed break-words">
+                              {row.penjelasanProdi || <span className="text-muted-foreground">-</span>}
+                            </td>
+                            <td className="border border-border px-3 py-2.5 align-top">
+                              {canEdit ? (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  disabled={busy}
+                                  onClick={() => setFormTarget({ mode: 'add', sectionNo: row.no, rowId: row.id })}
+                                >
+                                  <Plus className="size-3.5" />
+                                  Tambah
+                                </Button>
+                              ) : (
+                                <span className="text-muted-foreground">-</span>
+                              )}
+                            </td>
+                          </>
+                        )}
                       </tr>
 
                       {isExpanded
@@ -550,136 +554,16 @@ export function InstrumenTable({ mode }: { mode: 'public' | 'admin' }) {
                                 kriteria={child.doc?.kriteria ?? section.nama}
                                 subKriteria={child.subKriteria}
                                 indikator={child.indikator}
-                                penjelasanProdi={''}
                                 namaFile={child.doc?.namaFile ?? ''}
                                 deskripsi={child.doc?.deskripsi ?? ''}
                               />
-                              <td className="border border-border px-3 py-2.5 align-top">
-                                {canEdit ? (
-                                  <div className="flex items-center gap-3">
-                                    {child.doc?.link ? (
-                                      <Button
-                                        asChild
-                                        variant="outline"
-                                        size="icon-sm"
-                                        title="Buka Dokumen"
-                                        aria-label="Buka Dokumen"
-                                      >
-                                        <a
-                                          href={child.doc.link}
-                                          target="_blank"
-                                          rel="noreferrer noopener"
-                                        >
-                                          <LinkIcon className="size-3.5" />
-                                        </a>
-                                      </Button>
-                                    ) : (
-                                      <Button
-                                        asChild
-                                        variant="outline"
-                                        size="icon-sm"
-                                        title="Buka Dokumen"
-                                        aria-label="Buka Dokumen"
-                                      >
-                                        <Link href="/spmi">
-                                          <LinkIcon className="size-3.5" />
-                                        </Link>
-                                      </Button>
-                                    )}
-                                    <Button
-                                      variant="outline"
-                                      size="icon-sm"
-                                      title="View File"
-                                      aria-label="View File"
-                                      disabled={!child.fileUrl}
-                                      onClick={() =>
-                                        setViewTarget({
-                                          sectionNo: row.no,
-                                          rowId: row.id,
-                                          childNo: child.no,
-                                        })
-                                      }
-                                    >
-                                      <Eye className="size-3.5" />
-                                    </Button>
-                                    <div className="flex items-center gap-2">
-                                      <Button
-                                        variant="destructive"
-                                        size="icon-sm"
-                                        title="Del"
-                                        aria-label="Del"
-                                        disabled={busy}
-                                        onClick={() =>
-                                          void runMutation(() =>
-                                            delChild(row.no, row.id, child.no)
-                                          )
-                                        }
-                                      >
-                                        <Trash2 className="size-3.5" />
-                                      </Button>
-                                      <Button
-                                        variant="outline"
-                                        size="icon-sm"
-                                        title="Update"
-                                        aria-label="Update"
-                                        disabled={busy}
-                                        onClick={() =>
-                                          setFormTarget({
-                                            mode: 'update',
-                                            sectionNo: row.no,
-                                            rowId: row.id,
-                                            childNo: child.no,
-                                          })
-                                        }
-                                      >
-                                        <Pencil className="size-3.5" />
-                                      </Button>
-                                      <label
-                                        className={cn(
-                                          buttonVariants({ variant: 'default', size: 'icon-sm' }),
-                                          'cursor-pointer'
-                                        )}
-                                        title="Upload"
-                                        aria-label="Upload"
-                                      >
-                                        <Upload className="size-3.5" />
-                                        <input
-                                          type="file"
-                                          className="hidden"
-                                          accept={fileAccept}
-                                          disabled={busy}
-                                          onChange={(e) => {
-                                            const file = e.target.files?.[0]
-                                            if (file) {
-                                              void runMutation(() =>
-                                                uploadFile(row.no, row.id, child.no, file)
-                                              )
-                                            }
-                                            e.target.value = ''
-                                          }}
-                                        />
-                                      </label>
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <Button
-                                    variant="outline"
-                                    size="icon-sm"
-                                    title="View File"
-                                    aria-label="View File"
-                                    disabled={!child.fileUrl}
-                                    onClick={() =>
-                                      setViewTarget({
-                                        sectionNo: row.no,
-                                        rowId: row.id,
-                                        childNo: child.no,
-                                      })
-                                    }
-                                  >
-                                    <Eye className="size-3.5" />
-                                  </Button>
-                                )}
-                              </td>
+{mode === 'admin' && (
+                                <>
+                                  <td className="border border-border px-3 py-2.5 align-top">
+                                    <span className="text-muted-foreground">-</span>
+                                  </td>
+                                </>
+                              )}
                             </tr>
                           ))
                         : null}

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
+import { TooltipProvider } from '@/components/ui/tooltip'
 import './globals.css'
 
 const inter = Inter({ subsets: ['latin'] })
@@ -17,9 +18,7 @@ export default function RootLayout({
   return (
     <html lang="id" suppressHydrationWarning>
       <body className={inter.className}>
-        <div className="flex min-h-dvh flex-col">
-          {children}
-        </div>
+        <TooltipProvider>{children}</TooltipProvider>
       </body>
     </html>
   )
