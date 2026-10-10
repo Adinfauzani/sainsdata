@@ -4,16 +4,12 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { FileText, FolderOpen, Link2, Layers, ListTree, Table2, LogOut } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { InstrumenTable } from '@/components/InstrumenTable'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { PageHeader } from '@/components/PageHeader'
 import { useAuth } from '@/context/auth'
 import { api } from '@/lib/api'
 import { Badge } from '@/components/ui/badge'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { UsersTab } from '@/components/dashboard/UsersTab'
-import { AuditLogTab } from '@/components/dashboard/AuditLogTab'
-import DataDokumenAdmin from '@/components/dashboard/DataDokumenAdmin'
+import { DashboardSidebar } from '@/components/layout/DashboardSidebar'
 
 interface Stats {
   sections: number
@@ -39,13 +35,12 @@ const statCards: { key: keyof Stats; label: string; icon: typeof Layers; color: 
   { key: 'files', label: 'File Terunggah', icon: FolderOpen, color: 'text-pink-500' },
 ]
 
-export default function Dashboard() {
+export default function DashboardOverview() {
   const { admin, loading, logout } = useAuth()
   const router = useRouter()
   const [stats, setStats] = useState<Stats | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loadingStats, setLoadingStats] = useState(true)
-  const [activeTab, setActiveTab] = useState<string>('overview')
 
   useEffect(() => {
     if (!admin) return
@@ -75,104 +70,55 @@ export default function Dashboard() {
     return null
   }
 
-  const isSudo = admin.role === 'sudo'
-  const isAdmin = admin.role === 'admin' || admin.role === 'sudo'
-
   return (
-    <>
-      <PageHeader
-        eyebrow="Dashboard"
-        title="Dashboard Admin"
-        description="Ringkasan seluruh data instrumen akreditasi program studi Sains Data."
-      >
-        <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
-          <p className="text-sm text-muted-foreground">
-            Masuk sebagai{' '}
-            <span className="font-medium text-foreground">{admin.email}</span>
-            {' '}
-            <Badge variant={admin.role === 'sudo' ? 'default' : admin.role === 'admin' ? 'secondary' : 'outline'}>
-              {admin.role === 'sudo' ? 'Sudo' : admin.role === 'admin' ? 'Admin' : 'User'}
-            </Badge>
-          </p>
-          <Button variant="outline" size="sm" onClick={() => void logout()}>
-            <LogOut className="size-3.5" />
-            Keluar
-          </Button>
-        </div>
-      </PageHeader>
+    <div className="flex min-h-screen bg-background">
+      <DashboardSidebar admin={admin} onLogout={() => void logout()} />
+      <main className="flex-1 overflow-auto">
+        <PageHeader
+          eyebrow="Dashboard"
+          title="Overview"
+          description="Ringkasan seluruh data instrumen akreditasi program studi Sains Data."
+        >
+          <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm text-muted-foreground">
+              Masuk sebagai{' '}
+              <span className="font-medium text-foreground">{admin.email}</span>
+              {' '}
+              <Badge variant={admin.role === 'sudo' ? 'default' : admin.role === 'admin' ? 'secondary' : 'outline'}>
+                {admin.role === 'sudo' ? 'Sudo' : admin.role === 'admin' ? 'Admin' : 'User'}
+              </Badge>
+            </p>
+            <Button variant="outline" size="sm" onClick={() => void logout()}>
+              <LogOut className="size-3.5" />
+              Keluar
+            </Button>
+          </div>
+        </PageHeader>
 
-      <div className="mx-auto w-full max-w-7xl space-y-8 px-4 py-8 sm:px-6">
-        {error ? (
-          <p className="text-sm font-medium text-destructive" role="alert">{error}</p>
-        ) : null}
+        <div className="mx-auto w-full max-w-7xl space-y-8 px-4 py-8 sm:px-6">
+          {error ? (
+            <p className="text-sm font-medium text-destructive" role="alert">{error}</p>
+          ) : null}
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="instrumen">Instrumen</TabsTrigger>
-            {isAdmin && <TabsTrigger value="datadokumen">Data Dokumen</TabsTrigger>}
-            {isSudo && <TabsTrigger value="users">Manajemen User</TabsTrigger>}
-            {isSudo && <TabsTrigger value="auditlog">Audit Log</TabsTrigger>}
-            {isSudo && <TabsTrigger value="settings">Pengaturan</TabsTrigger>}
-          </TabsList>
-
-          <TabsContent value="overview">
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-              {statCards.map(({ key, label, icon: Icon, color }) => (
-                <Card key={key} size="sm">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                      <Icon className={`size-4 ${color}`} />
-                      {label}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-3xl font-semibold tracking-tight">
-                      {loadingStats ? '–' : (stats?.[key] ?? 0)}
-                    </p>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="instrumen">
-            <InstrumenTable mode="admin" />
-          </TabsContent>
-
-          {isAdmin && (
-            <TabsContent value="datadokumen">
-              <DataDokumenAdmin />
-            </TabsContent>
-          )}
-
-          {isSudo && (
-            <TabsContent value="users">
-              <UsersTab />
-            </TabsContent>
-          )}
-
-          {isSudo && (
-            <TabsContent value="auditlog">
-              <AuditLogTab />
-            </TabsContent>
-          )}
-
-          {isSudo && (
-            <TabsContent value="settings">
-              <Card>
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+            {statCards.map(({ key, label, icon: Icon, color }) => (
+              <Card key={key} size="sm">
                 <CardHeader>
-                  <CardTitle>Pengaturan Sistem</CardTitle>
-                  <CardDescription>Konfigurasi global portal akreditasi</CardDescription>
+                  <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                    <Icon className={`size-4 ${color}`} />
+                    {label}
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm text-muted-foreground">Fitur pengaturan sistem akan segera tersedia.</p>
+                  <p className="text-3xl font-semibold tracking-tight">
+                    {loadingStats ? '–' : (stats?.[key] ?? 0)}
+                  </p>
                 </CardContent>
               </Card>
-            </TabsContent>
-          )}
-        </Tabs>
-      </div>
-    </>
+            ))}
+          </div>
+        </div>
+      </main>
+    </div>
   )
 }
