@@ -1,15 +1,8 @@
 import Link from 'next/link'
-import { ArrowRight, BookOpen, FileCheck2, Layers, Landmark } from 'lucide-react'
+import { ArrowRight, BookOpen, FileCheck2, Layers, Landmark, GraduationCap } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
-import { institution, programStudi } from '@/data/profile'
+import { institution } from '@/data/profile'
 import { spmiCategories, spmiDocuments } from '@/data/spmi'
-import { standards } from '@/data/standards'
-
-const stats = [
-  { label: 'Akreditasi', value: standards.length },
-  { label: 'Kategori SPMI', value: spmiCategories.length },
-  { label: 'Program Studi', value: programStudi.length },
-]
 
 const overview = [
   {
@@ -68,18 +61,25 @@ export default function Home() {
             </Link>
           </div>
 
-          <dl className="mt-12 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-border bg-border sm:grid-cols-4">
-            {stats.map((stat) => (
-              <div key={stat.label} className="bg-background px-5 py-6">
-                <dd className="text-3xl font-semibold tracking-tight tabular-nums">
-                  {stat.value}
-                </dd>
-                <dt className="mt-1 text-xs font-medium tracking-wide text-muted-foreground uppercase">
-                  {stat.label}
-                </dt>
+          <div className="mt-12 rounded-xl border border-border bg-muted/30 p-6 sm:p-8">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-foreground">
+                  Program Studi Sains Data — Fakultas Ilmu Komputer
+                </p>
+                <p className="text-sm text-muted-foreground max-w-xl">
+                  Program studi yang berfokus pada pengembangan ilmu pengetahuan dan teknologi di bidang sains data, menghasilkan lulusan kompeten dalam mengelola, menganalisis, dan memanfaatkan data skala besar untuk pengambilan keputusan berbasis bukti.
+                </p>
               </div>
-            ))}
-          </dl>
+              <Link
+                href="/profile"
+                className="inline-flex h-9 items-center gap-2 rounded-lg bg-primary px-5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 shrink-0"
+              >
+                <GraduationCap className="size-4" aria-hidden />
+                Lihat Profil Lengkap
+              </Link>
+            </div>
+          </div>
         </div>
       </section>
 
