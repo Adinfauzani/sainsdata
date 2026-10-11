@@ -31,9 +31,7 @@ export default function DashboardAuditLog() {
           description="Riwayat aktivitas sistem dan perubahan data."
         />
 
-        <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6">
-          <AuditLogTab />
-        </div>
+        <AuditLogTab />
       </div>
     </div>
   )

@@ -95,7 +95,7 @@ import {
 } from "@/components/ui/tabs"
 import { GripVerticalIcon, CircleCheckIcon, LoaderIcon, EllipsisVerticalIcon, Columns3Icon, ChevronDownIcon, PlusIcon, ChevronsLeftIcon, ChevronLeftIcon, ChevronRightIcon, ChevronsRightIcon, TrendingUpIcon } from "lucide-react"
 
-// New in v9: declare the features this table uses — anything you don't
+// New in v9: declare the features this table uses - anything you don't
 // register is tree-shaken out of the bundle.
 const features = tableFeatures({
   columnFilteringFeature,

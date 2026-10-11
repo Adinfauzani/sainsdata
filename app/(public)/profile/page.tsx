@@ -104,7 +104,7 @@ export default function Profile() {
 
       <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8 xl:px-10">
 
-        {/* A. Hero — Profil Program Studi */}
+        {/* A. Hero - Profil Program Studi */}
         <section aria-labelledby="hero-heading" className="relative rounded-2xl bg-gradient-to-br from-primary/5 via-background to-background p-5 sm:p-7 md:p-10 lg:p-12 overflow-hidden">
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,var(--primary)/0.08,transparent_60%)]" aria-hidden="true" />
           <header className="relative mb-6 sm:mb-8 md:mb-10">

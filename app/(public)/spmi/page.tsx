@@ -56,7 +56,7 @@ function SpmiContent() {
       <PageHeader
         eyebrow="SPMI"
         title="Dokumen Sistem Penjaminan Mutu Internal"
-        description="Kebijakan, manual, standar, formulir, dan dokumen pendukung yang mengatur siklus mutu Plan–Do–Check–Act."
+        description="Kebijakan, manual, standar, formulir, dan dokumen pendukung yang mengatur siklus mutu Plan-Do-Check-Act."
       />
 
       <div className="mx-auto grid w-full max-w-7xl lg:grid-cols-[17rem_1fr]">

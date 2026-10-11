@@ -31,9 +31,7 @@ export default function DashboardUsers() {
           description="Kelola akun admin, pengguna, dan peran akses."
         />
 
-        <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6">
-          <UsersTab />
-        </div>
+        <UsersTab />
       </div>
     </div>
   )

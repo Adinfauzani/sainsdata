@@ -31,9 +31,7 @@ export default function DashboardDokumen() {
           description="Kelola dokumen pendukung untuk seluruh standar akreditasi."
         />
 
-        <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6">
-          <DataDokumenAdmin />
-        </div>
+        <DataDokumenAdmin />
       </div>
     </div>
   )

@@ -37,13 +37,13 @@ const adminColumnLabels = [
 ]
 
 const columnWidths = {
-  'No': { width: '3.5rem' },
-  'Kriteria': { width: '10rem' },
-  'Sub Kriteria': { width: '12rem' },
-  'Indikator': { width: '18rem' },
-  'Nama File': { width: '10rem' },
-  'Deskripsi': { width: '14rem' },
-  'Penjelasan Prodi': { width: '16rem' },
+  'No': { width: '3.5rem', minWidth: '3rem' },
+  'Kriteria': { width: '10rem', minWidth: '8rem' },
+  'Sub Kriteria': { width: '12rem', minWidth: '9rem' },
+  'Indikator': { width: '18rem', minWidth: '12rem' },
+  'Nama File': { width: '10rem', minWidth: '8rem' },
+  'Deskripsi': { width: '14rem', minWidth: '10rem' },
+  'Penjelasan Prodi': { width: '16rem', minWidth: '12rem' },
 }
 
 type FormTarget =
@@ -73,13 +73,13 @@ function RowCells({
 }: RowCellsProps) {
   return (
     <>
-      <td className="border border-border px-3 py-2.5 align-top" style={columnWidths.Kriteria}>{kriteria}</td>
-      <td className="border border-border px-3 py-2.5 align-top whitespace-nowrap" style={columnWidths['Sub Kriteria']}>
+      <td className="border border-border px-3 py-2.5 sm:px-4 sm:py-3 align-top" style={columnWidths.Kriteria}>{kriteria}</td>
+      <td className="border border-border px-3 py-2.5 sm:px-4 sm:py-3 align-top whitespace-nowrap" style={columnWidths['Sub Kriteria']}>
         {subKriteria}
       </td>
-      <td className="border border-border px-3 py-2.5 align-top leading-relaxed truncate" style={columnWidths.Indikator}>{indikator}</td>
-      <td className="border border-border px-3 py-2.5 align-top whitespace-nowrap" style={columnWidths['Nama File']}>{namaFile}</td>
-      <td className="border border-border px-3 py-2.5 align-top truncate" style={columnWidths.Deskripsi}>{deskripsi}</td>
+      <td className="border border-border px-3 py-2.5 sm:px-4 sm:py-3 align-top leading-relaxed truncate" style={columnWidths.Indikator}>{indikator}</td>
+      <td className="border border-border px-3 py-2.5 sm:px-4 sm:py-3 align-top whitespace-nowrap" style={columnWidths['Nama File']}>{namaFile}</td>
+      <td className="border border-border px-3 py-2.5 sm:px-4 sm:py-3 align-top truncate" style={columnWidths.Deskripsi}>{deskripsi}</td>
     </>
   )
 }
@@ -424,14 +424,14 @@ export function InstrumenTable({ mode }: { mode: 'public' | 'admin' }) {
           {loadError}
         </p>
       ) : null}
-      <table className="w-full border-collapse text-sm" style={{ tableLayout: 'fixed' }}>
+      <table className="w-full border-collapse text-sm sm:text-base" style={{ tableLayout: 'auto' }}>
         <thead>
           <tr className="bg-muted">
             {columnLabels.map((label) => (
               <th
                 key={label}
                 scope="col"
-                className="border border-border px-3 py-2.5 text-start text-xs font-semibold tracking-wider uppercase"
+                className="border border-border px-3 py-2.5 sm:px-4 sm:py-3 text-start text-xs sm:text-sm font-semibold tracking-wider uppercase"
                 style={columnWidths[label as keyof typeof columnWidths]}
               >
                 {label}
@@ -441,7 +441,7 @@ export function InstrumenTable({ mode }: { mode: 'public' | 'admin' }) {
               <th
                 key={label}
                 scope="col"
-                className="border border-border px-3 py-2.5 text-start text-xs font-semibold tracking-wider uppercase"
+                className="border border-border px-3 py-2.5 sm:px-4 sm:py-3 text-start text-xs sm:text-sm font-semibold tracking-wider uppercase"
                 style={columnWidths[label as keyof typeof columnWidths]}
               >
                 {label}
@@ -455,7 +455,7 @@ export function InstrumenTable({ mode }: { mode: 'public' | 'admin' }) {
             <tr>
               <td
                 colSpan={columnLabels.length}
-                className="border border-border px-3 py-8 text-center text-muted-foreground"
+                className="border border-border px-3 py-8 sm:px-4 sm:py-10 text-center text-muted-foreground"
               >
                 Memuat data…
               </td>
@@ -464,7 +464,7 @@ export function InstrumenTable({ mode }: { mode: 'public' | 'admin' }) {
             <tr>
               <td
                 colSpan={columnLabels.length}
-                className="border border-border px-3 py-8 text-center text-destructive"
+                className="border border-border px-3 py-8 sm:px-4 sm:py-10 text-center text-destructive"
               >
                 {loadError}
               </td>
@@ -475,7 +475,7 @@ export function InstrumenTable({ mode }: { mode: 'public' | 'admin' }) {
                 <tr>
                   <td
                     colSpan={columnLabels.length}
-                    className="border border-border bg-primary/10 px-3 py-2 text-start text-sm font-semibold text-primary"
+                    className="border border-border bg-primary/10 px-3 py-2 sm:px-4 sm:py-3 text-start text-sm font-semibold text-primary"
                   >
                     {section.no}. {section.nama}
                   </td>
@@ -488,8 +488,8 @@ export function InstrumenTable({ mode }: { mode: 'public' | 'admin' }) {
                   return (
                     <Fragment key={key}>
                       <tr className="transition-colors hover:bg-muted/40">
-                        <td className="border border-border px-3 py-2.5 align-top">
-                          <span className="flex items-center gap-1 font-mono text-xs font-medium">
+                        <td className="border border-border px-3 py-2.5 sm:px-4 sm:py-3 align-top">
+                          <span className="flex items-center gap-1 font-mono text-xs sm:text-sm font-medium">
                             {row.children?.length ? (
                               <Button
                                 type="button"
@@ -501,7 +501,7 @@ export function InstrumenTable({ mode }: { mode: 'public' | 'admin' }) {
                               >
                                 <ChevronDown
                                   className={cn(
-                                    'size-3.5 transition-transform duration-150',
+                                    'size-3.5 sm:size-4 transition-transform duration-150',
                                     !isExpanded && '-rotate-90'
                                   )}
                                 />
@@ -519,10 +519,10 @@ export function InstrumenTable({ mode }: { mode: 'public' | 'admin' }) {
                         />
                         {mode === 'admin' && (
                           <>
-                            <td className="border border-border px-3 py-2.5 align-top leading-relaxed break-words">
+                            <td className="border border-border px-3 py-2.5 sm:px-4 sm:py-3 align-top leading-relaxed break-words">
                               {row.penjelasanProdi || <span className="text-muted-foreground">-</span>}
                             </td>
-                            <td className="border border-border px-3 py-2.5 align-top">
+                            <td className="border border-border px-3 py-2.5 sm:px-4 sm:py-3 align-top">
                               {canEdit ? (
                                 <Button
                                   variant="outline"
@@ -530,8 +530,8 @@ export function InstrumenTable({ mode }: { mode: 'public' | 'admin' }) {
                                   disabled={busy}
                                   onClick={() => setFormTarget({ mode: 'add', sectionNo: row.no, rowId: row.id })}
                                 >
-                                  <Plus className="size-3.5" />
-                                  Tambah
+                                  <Plus className="size-3.5 sm:size-4" />
+                                  <span className="hidden sm:inline">Tambah</span>
                                 </Button>
                               ) : (
                                 <span className="text-muted-foreground">-</span>
@@ -547,7 +547,7 @@ export function InstrumenTable({ mode }: { mode: 'public' | 'admin' }) {
                               key={`${key}.${child.no}`}
                               className="bg-muted/30 transition-colors hover:bg-muted/50"
                             >
-                              <td className="border border-border ps-10 pe-3 py-2.5 align-top font-mono text-xs text-muted-foreground">
+                              <td className="border border-border ps-10 pe-3 py-2.5 sm:ps-12 sm:pe-4 sm:py-3 align-top font-mono text-xs text-muted-foreground">
                                 {key}.{child.no}
                               </td>
                               <RowCells
@@ -559,7 +559,7 @@ export function InstrumenTable({ mode }: { mode: 'public' | 'admin' }) {
                               />
 {mode === 'admin' && (
                                 <>
-                                  <td className="border border-border px-3 py-2.5 align-top">
+                                  <td className="border border-border px-3 py-2.5 sm:px-4 sm:py-3 align-top">
                                     <span className="text-muted-foreground">-</span>
                                   </td>
                                 </>

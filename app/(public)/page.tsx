@@ -28,56 +28,88 @@ const overview = [
   },
 ]
 
+function HeroIllustration() {
+  return (
+    <div className="hidden lg:block absolute right-0 top-1/2 -translate-y-1/2 w-[45%] max-w-[480px] opacity-40 pointer-events-none" aria-hidden="true">
+      <svg viewBox="0 0 480 480" className="w-full h-full" preserveAspectRatio="xMidYMid meet">
+        <defs>
+          <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.12" />
+            <stop offset="100%" stopColor="var(--primary)" stopOpacity="0.01" />
+          </linearGradient>
+          <linearGradient id="grad2" x1="0%" y1="100%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.08" />
+            <stop offset="100%" stopColor="var(--primary)" stopOpacity="0.02" />
+          </linearGradient>
+        </defs>
+        <rect x="30" y="30" width="180" height="180" rx="12" fill="url(#grad1)" transform="rotate(-10 120 120)" />
+        <circle cx="360" cy="100" r="85" fill="var(--primary)" opacity="0.06" />
+        <polygon points="440,340 480,420 400,420" fill="var(--primary)" opacity="0.08" />
+        <rect x="150" y="300" width="240" height="240" rx="16" stroke="var(--primary)" strokeWidth="1.5" fill="none" opacity="0.1" transform="rotate(6 270 420)" />
+        <circle cx="100" cy="400" r="50" fill="var(--primary)" opacity="0.05" />
+        <rect x="330" y="200" width="110" height="110" rx="6" fill="var(--primary)" opacity="0.08" transform="rotate(20 385 255)" />
+        <circle cx="200" cy="200" r="3" fill="var(--primary)" opacity="0.15" />
+        <circle cx="400" cy="300" r="2" fill="var(--primary)" opacity="0.1" />
+        <rect x="50" y="380" width="60" height="4" rx="2" fill="var(--primary)" opacity="0.08" />
+        <rect x="380" y="80" width="4" height="60" rx="2" fill="var(--primary)" opacity="0.06" />
+      </svg>
+    </div>
+  )
+}
+
 export default function Home() {
   return (
     <>
-      <section className="border-b border-border px-4 pt-16 pb-14 sm:px-6">
+      <section className="relative border-b border-border px-4 pt-16 pb-14 sm:px-6 overflow-hidden">
         <div className="mx-auto w-full max-w-7xl">
-          <Badge variant="outline" className="font-mono text-[11px] tracking-wider uppercase">
-            {institution.singkatan} · Fakultas Ilmu Komputer
-          </Badge>
+          <HeroIllustration />
+          <div className="relative z-10 max-w-2xl sm:max-w-3xl lg:max-w-4xl">
+            <Badge variant="outline" className="font-mono text-[11px] tracking-wider uppercase">
+              {institution.singkatan} . Fakultas Ilmu Komputer
+            </Badge>
 
-          <h1 className="mt-5 max-w-3xl text-3xl font-semibold tracking-tight text-balance sm:text-5xl sm:leading-[1.1]">
-            Pusat Data dan Informasi Program Studi Sains Data
-          </h1>
+            <h1 className="mt-5 text-3xl font-semibold tracking-tight text-balance sm:text-4xl sm:leading-[1.1] lg:text-5xl xl:text-6xl">
+              Pusat Data dan Informasi Program Studi Sains Data
+            </h1>
 
-          <p className="mt-5 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-            Portal resmi SPMI Universitas Saintek Muhammadiyah yang menyediakan standar mutu, kebijakan, dan dokumen akreditasi secara terintegrasi, sistematis, dan mudah diakses, mencakup pendidikan, penelitian, pengabdian kepada masyarakat, serta tata kelola Program Studi Sains Data.
-          </p>
+            <p className="mt-5 text-base leading-relaxed text-muted-foreground sm:text-lg lg:text-xl max-w-3xl">
+              Portal resmi SPMI Universitas Saintek Muhammadiyah yang menyediakan standar mutu, kebijakan, dan dokumen akreditasi secara terintegrasi, sistematis, dan mudah diakses, mencakup pendidikan, penelitian, pengabdian kepada masyarakat, serta tata kelola Program Studi Sains Data.
+            </p>
 
-          <div className="mt-8 flex flex-wrap items-center gap-3">
-            <Link
-              href="/akreditasi"
-              className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-            >
-              Lihat Standar
-              <ArrowRight className="size-4" aria-hidden />
-            </Link>
-            <Link
-              href="/spmi"
-              className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-border px-4 text-sm font-medium transition-colors hover:bg-muted"
-            >
-              Dokumen SPMI
-            </Link>
-          </div>
-
-          <div className="mt-12 rounded-xl border border-border bg-muted/30 p-6 sm:p-8">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="space-y-2">
-                <p className="text-sm font-medium text-foreground">
-                  Program Studi Sains Data — Fakultas Ilmu Komputer
-                </p>
-                <p className="text-sm text-muted-foreground max-w-xl">
-                  Program studi yang berfokus pada pengembangan ilmu pengetahuan dan teknologi di bidang sains data, menghasilkan lulusan kompeten dalam mengelola, menganalisis, dan memanfaatkan data skala besar untuk pengambilan keputusan berbasis bukti.
-                </p>
-              </div>
+            <div className="mt-8 flex flex-wrap items-center gap-3">
               <Link
-                href="/profile"
-                className="inline-flex h-9 items-center gap-2 rounded-lg bg-primary px-5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 shrink-0"
+                href="/akreditasi"
+                className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
               >
-                <GraduationCap className="size-4" aria-hidden />
-                Lihat Profil Lengkap
+                Lihat Standar
+                <ArrowRight className="size-4" aria-hidden />
               </Link>
+              <Link
+                href="/spmi"
+                className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-border px-4 text-sm font-medium transition-colors hover:bg-muted"
+              >
+                Dokumen SPMI
+              </Link>
+            </div>
+
+            <div className="mt-12 rounded-xl border border-border bg-muted/30 p-6 sm:p-8">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-foreground">
+                    Program Studi Sains Data Fakultas Ilmu Komputer
+                  </p>
+                  <p className="text-sm text-muted-foreground max-w-xl">
+                    Program studi yang berfokus pada pengembangan ilmu pengetahuan dan teknologi di bidang sains data, menghasilkan lulusan kompeten dalam mengelola, menganalisis, dan memanfaatkan data skala besar untuk pengambilan keputusan berbasis bukti.
+                  </p>
+                </div>
+                <Link
+                  href="/profile"
+                  className="inline-flex h-9 items-center gap-2 rounded-lg bg-primary px-5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 shrink-0"
+                >
+                  <GraduationCap className="size-4" aria-hidden />
+                  Lihat Profil Lengkap
+                </Link>
+              </div>
             </div>
           </div>
         </div>

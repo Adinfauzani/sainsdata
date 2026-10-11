@@ -31,17 +31,15 @@ export default function DashboardSettings() {
           description="Konfigurasi global portal akreditasi"
         />
 
-        <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Pengaturan Sistem</CardTitle>
-              <CardDescription>Fitur pengaturan sistem akan segera tersedia.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">Halaman ini dalam pengembangan.</p>
-            </CardContent>
-          </Card>
-        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>Pengaturan Sistem</CardTitle>
+            <CardDescription>Fitur pengaturan sistem akan segera tersedia.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">Halaman ini dalam pengembangan.</p>
+          </CardContent>
+        </Card>
       </div>
     </div>
   )

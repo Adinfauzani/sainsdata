@@ -99,7 +99,7 @@ export default function DashboardOverview() {
               </CardHeader>
               <CardContent>
                 <p className="text-3xl font-semibold tracking-tight">
-                  {loadingStats ? '–' : (stats?.[key] ?? 0)}
+                  {loadingStats ? '...' : (stats?.[key] ?? 0)}
                 </p>
               </CardContent>
             </Card>

@@ -31,9 +31,7 @@ export default function DashboardInstrumen() {
           description="Kelola data instrumen LAM INFOKOM untuk akreditasi program studi."
         />
 
-        <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6">
-          <InstrumenTable mode="admin" />
-        </div>
+        <InstrumenTable mode="admin" />
       </div>
     </div>
   )
