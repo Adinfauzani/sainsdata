@@ -91,9 +91,10 @@ export default function Home() {
                 Dokumen SPMI
               </Link>
             </div>
+          </div>
 
-            <div className="mt-12 rounded-xl border border-border bg-muted/30 p-6 sm:p-8">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="relative z-10 mx-auto mt-12 max-w-2xl rounded-xl border border-border bg-muted/30 p-6 sm:p-8">
+            <div className="flex flex-col items-center text-center gap-4">
                 <div className="space-y-2">
                   <p className="text-sm font-medium text-foreground">
                     Program Studi Sains Data Fakultas Ilmu Komputer
@@ -109,43 +110,47 @@ export default function Home() {
                   <GraduationCap className="size-4" aria-hidden />
                   Lihat Profil Lengkap
                 </Link>
-              </div>
             </div>
           </div>
         </div>
       </section>
 
-      <section className="px-4 py-14 sm:px-6" aria-labelledby="overview-heading">
+      <section className="px-4 py-16 sm:px-6" aria-labelledby="overview-heading">
         <div className="mx-auto w-full max-w-7xl">
-          <h2 id="overview-heading" className="text-xs font-semibold tracking-widest text-primary uppercase">
-            Jelajahi Portal
-          </h2>
+          <div className="max-w-2xl">
+            <h2 id="overview-heading" className="text-xs font-semibold tracking-widest text-primary uppercase">
+              Jelajahi Portal
+            </h2>
+            <p className="mt-3 text-base leading-relaxed text-muted-foreground sm:text-lg">
+              Standar mutu, kebijakan, dan dokumen akreditasi Program Studi Sains Data - jelajahi sesuai kebutuhan Anda.
+            </p>
+          </div>
 
-          <div className="mt-6 grid gap-px overflow-hidden rounded-xl border border-border bg-border md:grid-cols-3">
+          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {overview.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
-                className="group flex flex-col gap-3 bg-background p-6 transition-colors hover:bg-muted/60"
+                className="group flex flex-col gap-4 rounded-xl border border-border bg-background p-6 transition-all duration-150 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md hover:shadow-primary/10"
               >
-                <span className="flex size-9 items-center justify-center rounded-lg border border-border bg-background text-primary">
-                  <item.icon className="size-4" aria-hidden />
+                <span className="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary transition-colors duration-150 group-hover:bg-primary group-hover:text-primary-foreground">
+                  <item.icon className="size-5" aria-hidden />
                 </span>
                 <span className="flex items-center gap-2 text-sm font-semibold">
                   {item.title}
                   <ArrowRight
-                    className="size-3.5 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary"
+                    className="size-3.5 text-muted-foreground transition-transform duration-150 group-hover:translate-x-1 group-hover:text-primary"
                     aria-hidden
                   />
                 </span>
-                <span className="text-sm leading-relaxed text-muted-foreground">
+                <span className="flex-1 text-sm leading-relaxed text-muted-foreground">
                   {item.description}
                 </span>
               </Link>
             ))}
           </div>
 
-          <div className="mt-6 flex flex-wrap items-center gap-3 rounded-xl border border-border bg-muted/40 px-5 py-4 text-sm">
+          <div className="mt-8 flex flex-wrap items-center gap-3 rounded-xl border border-primary/20 bg-primary/5 px-5 py-4 text-sm">
             <FileCheck2 className="size-4 shrink-0 text-primary" aria-hidden />
             <span className="text-muted-foreground">
               Akreditasi Institusi:{' '}

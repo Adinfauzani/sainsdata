@@ -44,6 +44,7 @@ const columnWidths = {
   'Nama File': { width: '10rem', minWidth: '8rem' },
   'Deskripsi': { width: '14rem', minWidth: '10rem' },
   'Penjelasan Prodi': { width: '16rem', minWidth: '12rem' },
+  'Aksi': { width: '9rem', minWidth: '7rem' },
 }
 
 type FormTarget =
@@ -73,13 +74,13 @@ function RowCells({
 }: RowCellsProps) {
   return (
     <>
-      <td className="border border-border px-3 py-2.5 sm:px-4 sm:py-3 align-top" style={columnWidths.Kriteria}>{kriteria}</td>
-      <td className="border border-border px-3 py-2.5 sm:px-4 sm:py-3 align-top whitespace-nowrap" style={columnWidths['Sub Kriteria']}>
+      <td className="border border-border px-3 py-2.5 sm:px-4 sm:py-3 align-top break-words" style={columnWidths.Kriteria}>{kriteria}</td>
+      <td className="border border-border px-3 py-2.5 sm:px-4 sm:py-3 align-top break-words" style={columnWidths['Sub Kriteria']}>
         {subKriteria}
       </td>
-      <td className="border border-border px-3 py-2.5 sm:px-4 sm:py-3 align-top leading-relaxed truncate" style={columnWidths.Indikator}>{indikator}</td>
-      <td className="border border-border px-3 py-2.5 sm:px-4 sm:py-3 align-top whitespace-nowrap" style={columnWidths['Nama File']}>{namaFile}</td>
-      <td className="border border-border px-3 py-2.5 sm:px-4 sm:py-3 align-top truncate" style={columnWidths.Deskripsi}>{deskripsi}</td>
+      <td className="border border-border px-3 py-2.5 sm:px-4 sm:py-3 align-top leading-relaxed break-words" style={columnWidths.Indikator}>{indikator}</td>
+      <td className="border border-border px-3 py-2.5 sm:px-4 sm:py-3 align-top break-words" style={columnWidths['Nama File']}>{namaFile}</td>
+      <td className="border border-border px-3 py-2.5 sm:px-4 sm:py-3 align-top break-words" style={columnWidths.Deskripsi}>{deskripsi}</td>
     </>
   )
 }
@@ -288,6 +289,8 @@ function DocPreviewDialog({
 export function InstrumenTable({ mode }: { mode: 'public' | 'admin' }) {
   const { admin } = useAuth()
   const canEdit = mode === 'admin' && !!admin
+  const totalColumns =
+    columnLabels.length + (mode === 'admin' ? adminColumnLabels.length + 1 : 0)
   const [sections, setSections] = useState<InstrumenSection[]>([])
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [formTarget, setFormTarget] = useState<FormTarget | null>(null)
@@ -424,7 +427,7 @@ export function InstrumenTable({ mode }: { mode: 'public' | 'admin' }) {
           {loadError}
         </p>
       ) : null}
-      <table className="w-full border-collapse text-sm sm:text-base" style={{ tableLayout: 'auto' }}>
+      <table className="w-full border-collapse text-sm sm:text-base" style={{ tableLayout: 'fixed' }}>
         <thead>
           <tr className="bg-muted">
             {columnLabels.map((label) => (
@@ -447,6 +450,15 @@ export function InstrumenTable({ mode }: { mode: 'public' | 'admin' }) {
                 {label}
               </th>
             ))}
+            {mode === 'admin' && (
+              <th
+                scope="col"
+                className="border border-border px-3 py-2.5 sm:px-4 sm:py-3 text-start text-xs sm:text-sm font-semibold tracking-wider uppercase"
+                style={columnWidths.Aksi}
+              >
+                Aksi
+              </th>
+            )}
           </tr>
         </thead>
 
@@ -454,7 +466,7 @@ export function InstrumenTable({ mode }: { mode: 'public' | 'admin' }) {
           {loadState === 'loading' ? (
             <tr>
               <td
-                colSpan={columnLabels.length}
+                colSpan={totalColumns}
                 className="border border-border px-3 py-8 sm:px-4 sm:py-10 text-center text-muted-foreground"
               >
                 Memuat data…
@@ -463,7 +475,7 @@ export function InstrumenTable({ mode }: { mode: 'public' | 'admin' }) {
           ) : loadState === 'error' ? (
             <tr>
               <td
-                colSpan={columnLabels.length}
+                colSpan={totalColumns}
                 className="border border-border px-3 py-8 sm:px-4 sm:py-10 text-center text-destructive"
               >
                 {loadError}
@@ -474,7 +486,7 @@ export function InstrumenTable({ mode }: { mode: 'public' | 'admin' }) {
               <Fragment key={section.no}>
                 <tr>
                   <td
-                    colSpan={columnLabels.length}
+                    colSpan={totalColumns}
                     className="border border-border bg-primary/10 px-3 py-2 sm:px-4 sm:py-3 text-start text-sm font-semibold text-primary"
                   >
                     {section.no}. {section.nama}
@@ -522,7 +534,7 @@ export function InstrumenTable({ mode }: { mode: 'public' | 'admin' }) {
                             <td className="border border-border px-3 py-2.5 sm:px-4 sm:py-3 align-top leading-relaxed break-words">
                               {row.penjelasanProdi || <span className="text-muted-foreground">-</span>}
                             </td>
-                            <td className="border border-border px-3 py-2.5 sm:px-4 sm:py-3 align-top">
+                            <td className="border border-border px-3 py-2.5 sm:px-4 sm:py-3 align-top" style={columnWidths.Aksi}>
                               {canEdit ? (
                                 <Button
                                   variant="outline"
@@ -558,12 +570,15 @@ export function InstrumenTable({ mode }: { mode: 'public' | 'admin' }) {
                                 deskripsi={child.doc?.deskripsi ?? ''}
                               />
 {mode === 'admin' && (
-                                <>
-                                  <td className="border border-border px-3 py-2.5 sm:px-4 sm:py-3 align-top">
-                                    <span className="text-muted-foreground">-</span>
-                                  </td>
-                                </>
-                              )}
+  <>
+    <td className="border border-border px-3 py-2.5 sm:px-4 sm:py-3 align-top">
+      <span className="text-muted-foreground">-</span>
+    </td>
+    <td className="border border-border px-3 py-2.5 sm:px-4 sm:py-3 align-top" style={columnWidths.Aksi}>
+      <span className="text-muted-foreground">-</span>
+    </td>
+  </>
+)}
                             </tr>
                           ))
                         : null}

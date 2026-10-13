@@ -203,12 +203,12 @@ export const sainsDataTentang = `Program Studi Sains Data Universitas Saintek Mu
 
 Ruang lingkup keilmuan Program Studi Sains Data mencakup, namun tidak terbatas pada:
 
-- **Statistika matematika & inferensial** — fondasi analisis data yang rigor
-- **Pemrograman komputasional & struktur data** — pengolahan data yang efisien dan skalabel
-- **Eksplorasi data, visualisasi, & data storytelling** — mengubah data mentah menjadi wawasan yang dapat ditindaklanjuti
-- **Pembelajaran mesin, pembelajaran mendalam, & kecerdasan buatan** — pemodelan prediktif dan preskriptif
-- **Penambangan data (data mining) & analisis prediktif** — menemukan pola tersembunyi dalam data besar
-- **Big data analytics & komputasi berkinerja tinggi** — menangani volume, velocity, dan variety data
-- **Etika data, tata kelola data, & privasi informasi** — aspek hukum, sosial, dan moral dalam pengelolaan data
+- **Statistika matematika & inferensial** - fondasi analisis data yang rigor
+- **Pemrograman komputasional & struktur data** - pengolahan data yang efisien dan skalabel
+- **Eksplorasi data, visualisasi, & data storytelling** - mengubah data mentah menjadi wawasan yang dapat ditindaklanjuti
+- **Pembelajaran mesin, pembelajaran mendalam, & kecerdasan buatan** - pemodelan prediktif dan preskriptif
+- **Penambangan data (data mining) & analisis prediktif** - menemukan pola tersembunyi dalam data besar
+- **Big data analytics & komputasi berkinerja tinggi** - menangani volume, velocity, dan variety data
+- **Etika data, tata kelola data, & privasi informasi** - aspek hukum, sosial, dan moral dalam pengelolaan data
 
 Program studi mengadopsi pendekatan interdisipilin yang menggabungkan ilmu komputer, statistika, matematika terapan, dan pengetahuan domain untuk memecahkan masalah kompleks berbasis data.`
