@@ -7,6 +7,8 @@ export interface TreeNode {
   label: string
   meta?: string
   href?: string
+  /** External resource: rendered as a plain link that opens in a new tab. */
+  external?: boolean
   children?: TreeNode[]
 }
 

@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { ChevronRight, FileText, Folder, FolderOpen } from 'lucide-react'
+import { ChevronRight, ExternalLink, FileText, Folder, FolderOpen } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { TreeNode } from '@/types'
 
@@ -36,7 +36,7 @@ function TreeItem({ node, depth, activeId, expandedIds, onToggle, onNavigate }: 
   const expanded = expandedIds.has(node.id)
   const active = isNodeActive(node, activeId, pathname)
 
-  const Icon = expandable ? (expanded ? FolderOpen : Folder) : FileText
+  const Icon = expandable ? (expanded ? FolderOpen : Folder) : node.external ? ExternalLink : FileText
 
   const toggleButton = expandable ? (
     <button
@@ -99,7 +99,17 @@ function TreeItem({ node, depth, activeId, expandedIds, onToggle, onNavigate }: 
         />
         <div className={classes}>
           {toggleButton}
-          {node.href ? (
+          {node.href && node.external ? (
+            <a
+              href={node.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={innerClasses}
+              onClick={onNavigate}
+            >
+              {content}
+            </a>
+          ) : node.href ? (
             <Link href={node.href} className={innerClasses} onClick={onNavigate}>
               {content}
             </Link>

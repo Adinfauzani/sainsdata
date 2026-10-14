@@ -4,7 +4,8 @@ import { Providers } from '@/providers'
 import { useAuth } from '@/context/auth'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
-import { LayoutDashboard, Table2, FileText, Users, ShieldCheck, Settings2 } from 'lucide-react'
+import { LayoutDashboard, Table2, FileText, Users, ShieldCheck, Settings2, CircleUser, type LucideIcon } from 'lucide-react'
+import type { UserRole } from '@/types'
 import { Badge } from '@/components/ui/badge'
 import {
   DropdownMenu,
@@ -32,13 +33,23 @@ import {
 } from '@/components/ui/sidebar'
 import { EllipsisVerticalIcon, LogOutIcon } from 'lucide-react'
 
-const navMain = [
+interface NavItem {
+  title: string
+  url: string
+  icon: LucideIcon
+  roles: UserRole[]
+  /** When true the URL is resolved from the signed-in user (`/{username}`). */
+  dynamic?: boolean
+}
+
+const navMain: NavItem[] = [
   { title: 'Overview', url: '/dashboard', icon: LayoutDashboard, roles: ['admin', 'sudo'] },
   { title: 'Instrumen', url: '/dashboard/instrumen', icon: Table2, roles: ['admin', 'sudo'] },
   { title: 'Data Dokumen', url: '/dashboard/dokumen', icon: FileText, roles: ['admin', 'sudo'] },
   { title: 'Manajemen User', url: '/dashboard/users', icon: Users, roles: ['sudo'] },
   { title: 'Audit Log', url: '/dashboard/audit-log', icon: ShieldCheck, roles: ['sudo'] },
   { title: 'Pengaturan', url: '/dashboard/settings', icon: Settings2, roles: ['sudo'] },
+  { title: 'Profil Saya', url: '/', icon: CircleUser, roles: ['user', 'admin', 'sudo'], dynamic: true },
 ]
 
 function NavMain() {
@@ -53,7 +64,10 @@ function NavMain() {
 
   if (loading || !admin) return null
 
-  const filteredItems = navMain.filter((item) => item.roles.includes(admin.role))
+  const profileHref = `/${encodeURIComponent(admin.username)}`
+  const filteredItems = navMain
+    .filter((item) => item.roles.includes(admin.role))
+    .map((item) => ({ ...item, url: item.dynamic ? profileHref : item.url }))
 
   return (
     <SidebarGroup>
@@ -141,6 +155,20 @@ function NavUser() {
   )
 }
 
+function SidebarBrand() {
+  const { admin } = useAuth()
+  const href = admin && admin.role === 'user' ? `/${encodeURIComponent(admin.username)}` : '/dashboard'
+
+  return (
+    <SidebarMenuButton asChild className="data-[slot=sidebar-menu-button]:p-1.5!">
+      <a href={href} className="flex items-center gap-2">
+        <img src="/favicon.png" alt="" className="size-6 rounded-sm" />
+        <span className="text-base font-semibold">Sains Data</span>
+      </a>
+    </SidebarMenuButton>
+  )
+}
+
 export const dynamic = 'force-dynamic'
 
 interface ProtectedLayoutProps {
@@ -154,12 +182,7 @@ export default function ProtectedLayout({ children }: ProtectedLayoutProps) {
         <Sidebar collapsible="offcanvas" variant="inset">
           <SidebarHeader>
             <SidebarTrigger className="-ml-1" />
-            <SidebarMenuButton asChild className="data-[slot=sidebar-menu-button]:p-1.5!">
-              <a href="/dashboard" className="flex items-center gap-2">
-                <img src="/favicon.png" alt="" className="size-6 rounded-sm" />
-                <span className="text-base font-semibold">Sains Data</span>
-              </a>
-            </SidebarMenuButton>
+            <SidebarBrand />
           </SidebarHeader>
           <SidebarContent>
             <NavMain />

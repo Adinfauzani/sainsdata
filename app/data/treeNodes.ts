@@ -1,5 +1,5 @@
 import type { TreeNode } from '@/types'
-import { bpmNavigation, type BpmRouteNode } from '@/data/bpm'
+import { bpmExternalLinks, bpmNavigation, type BpmRouteNode } from '@/data/bpm'
 
 export interface MainNavLink {
   href: string
@@ -28,4 +28,12 @@ function toTreeNodes(nodes: BpmRouteNode[]): TreeNode[] {
 }
 
 /** BPM navigation tree derived from the centralized route registry. */
-export const bpmTreeNodes: TreeNode[] = toTreeNodes(bpmNavigation)
+export const bpmTreeNodes: TreeNode[] = [
+  ...toTreeNodes(bpmNavigation),
+  ...bpmExternalLinks.map((link) => ({
+    id: link.id,
+    label: link.navLabel,
+    href: link.url,
+    external: true,
+  })),
+]

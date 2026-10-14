@@ -17,7 +17,7 @@ export default function DashboardSettings() {
       router.replace('/login')
     }
     if (!loading && admin && admin.role === 'user') {
-      router.replace('/profile')
+      router.replace(`/${encodeURIComponent(admin.username)}`)
     }
   }, [admin, loading, router])
 

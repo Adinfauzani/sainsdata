@@ -384,6 +384,28 @@ export const bpmNavigation: BpmRouteNode[] = [
   },
 ]
 
+/* -------------------------------------------------------------------------- */
+/* External resources                                                          */
+/* -------------------------------------------------------------------------- */
+
+export interface BpmExternalLink {
+  /** Stable identifier used by navigation. */
+  id: string
+  /** Short label for menus. */
+  navLabel: string
+  /** Absolute URL of the external resource. */
+  url: string
+}
+
+/**
+ * External tools that belong to the BPM menu but are hosted elsewhere. They are
+ * rendered at the bottom of the BPM navigation tree and open the source site
+ * directly.
+ */
+export const bpmExternalLinks: BpmExternalLink[] = [
+  { id: 'peta-kurikulum', navLabel: 'Peta Kurikulum', url: 'https://petakuri.vercel.app' },
+]
+
 function flatten(nodes: BpmRouteNode[], out: BpmRouteNode[] = []): BpmRouteNode[] {
   for (const node of nodes) {
     out.push(node)

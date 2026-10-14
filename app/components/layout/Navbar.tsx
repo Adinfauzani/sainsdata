@@ -3,10 +3,10 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { ChevronDown, LayoutDashboard, Menu } from 'lucide-react'
+import { ChevronDown, Menu } from 'lucide-react'
 import { Tree } from '@/components/navigation/Tree'
 import { MobileNav } from '@/components/layout/MobileNav'
-import { Button } from '@/components/ui/button'
+import { UserAvatarLink } from '@/components/layout/UserAvatarLink'
 import { useAuth } from '@/context/auth'
 import { cn } from '@/lib/utils'
 import { bpmTreeNodes, mainNavLinks } from '@/data/treeNodes'
@@ -117,20 +117,7 @@ export function Navbar() {
             Contact
           </Link>
 
-          {admin && (admin.role === 'admin' || admin.role === 'sudo') ? (
-            <Button asChild variant="ghost" size="sm">
-              <Link
-                href="/dashboard"
-                className={cn(
-                  'text-sm font-medium',
-                  pathname === '/dashboard' ? 'text-primary' : 'text-foreground/80 hover:text-foreground'
-                )}
-              >
-                <LayoutDashboard className="size-3.5" />
-                Dashboard
-              </Link>
-            </Button>
-          ) : null}
+          {admin ? <UserAvatarLink /> : null}
         </nav>
 
         <div className="md:hidden">

@@ -47,6 +47,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(res.token)
     setAdmin(res.admin)
     setProfile(null)
+    return res.admin
   }, [])
 
   const register = useCallback(async (email: string, username: string, password: string) => {

@@ -2,10 +2,11 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, X } from 'lucide-react'
+import { X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Tree } from '@/components/navigation/Tree'
+import { UserAvatarLink } from '@/components/layout/UserAvatarLink'
 import { useAuth } from '@/context/auth'
 import { cn } from '@/lib/utils'
 import { bpmTreeNodes, mainNavLinks } from '@/data/treeNodes'
@@ -54,14 +55,9 @@ export function MobileNav({ open, onOpenChange }: MobileNavProps) {
             <Tree nodes={bpmTreeNodes} defaultExpandedIds={[]} onNodeSelect={close} aria-label="Submenu BPM" />
           </div>
 
-          {admin && (admin.role === 'admin' || admin.role === 'sudo') ? (
+          {admin ? (
             <div className="border-t border-border pt-3">
-              <Button asChild variant="ghost" className="w-full justify-start">
-                <Link href="/dashboard" onClick={close}>
-                  <LayoutDashboard className="size-4" />
-                  Dashboard
-                </Link>
-              </Button>
+              <UserAvatarLink showLabel onNavigate={close} />
             </div>
           ) : null}
         </nav>

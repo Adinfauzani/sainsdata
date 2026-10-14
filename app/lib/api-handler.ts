@@ -411,7 +411,7 @@ export async function handleApi(req: Request, path: string): Promise<Response | 
       avatarUrl: profile.avatar_url ?? null,
     })
 
-    const headers = new Headers({ location: '/dashboard' })
+    const headers = new Headers({ location: admin.role === 'user' ? `/${encodeURIComponent(admin.username)}` : '/dashboard' })
     headers.append('set-cookie', serializeCookie(SESSION_COOKIE, token, SESSION_MAX_AGE))
     headers.append('set-cookie', serializeCookie(PROFILE_COOKIE, profilePayload, SESSION_MAX_AGE))
     headers.append('set-cookie', clearCookie(OAUTH_STATE_COOKIE))
