@@ -13,9 +13,15 @@ import {
   FieldLabel,
 } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
+import { GitHubLoginButton } from '@/components/GitHubLoginButton'
 import { useAuth } from '@/context/auth'
 
-export function LoginForm({ className, ...props }: React.ComponentProps<'div'>) {
+interface LoginFormProps extends React.ComponentProps<'div'> {
+  /** Pre-filled message when the OAuth callback redirects with `?error=`. */
+  oauthError?: string | null
+}
+
+export function LoginForm({ className, oauthError, ...props }: LoginFormProps) {
   const { admin, loading, login } = useAuth()
   const router = useRouter()
   const [email, setEmail] = useState('')
@@ -48,10 +54,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<'div'>) 
         <FieldGroup>
           <div className="flex flex-col items-center gap-2 text-center">
             <Link href="/" className="flex flex-col items-center gap-2 font-medium">
-              <span className="flex size-8 items-center justify-center rounded-md bg-primary text-xs font-bold text-primary-foreground">
-                SD
-              </span>
-              <span className="sr-only">Sains Data</span>
+              <img src="/favicon.png" alt="Sains Data" className="size-8 rounded-md" />
             </Link>
             <h1 className="text-xl font-bold">Masuk ke Dashboard</h1>
             <FieldDescription>
@@ -85,7 +88,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<'div'>) 
               required
             />
           </Field>
-          <FieldError>{error}</FieldError>
+          <FieldError>{error ?? oauthError}</FieldError>
           <Field>
             <Button type="submit" className="w-full" disabled={submitting}>
               {submitting ? 'Memproses…' : 'Masuk'}
@@ -93,6 +96,14 @@ export function LoginForm({ className, ...props }: React.ComponentProps<'div'>) 
           </Field>
         </FieldGroup>
       </form>
+
+      <div className="flex items-center gap-3" aria-hidden="true">
+        <span className="h-px flex-1 bg-border" />
+        <span className="text-xs text-muted-foreground">atau</span>
+        <span className="h-px flex-1 bg-border" />
+      </div>
+
+      <GitHubLoginButton className="w-full" />
     </div>
   )
 }

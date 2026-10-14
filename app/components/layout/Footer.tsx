@@ -13,7 +13,7 @@ const navigation = [
 
 const footerLinks = [
   { href: '/akreditasi', label: 'Standar Akreditasi' },
-  { href: '/spmi', label: 'Dokumen SPMI' },
+  { href: '/spmi', label: 'Dokumen BPM' },
   { href: '/data-dokumen', label: 'Arsip Dokumen' },
 ]
 

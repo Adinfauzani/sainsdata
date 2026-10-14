@@ -81,8 +81,24 @@ function NavMain() {
 }
 
 function NavUser() {
-  const { admin, logout } = useAuth()
+  const { admin, profile, logout } = useAuth()
   const { isMobile } = useSidebar()
+
+  const displayName = profile?.name || admin?.username || 'User'
+  const displayDetail = admin?.email ?? profile?.login ?? ''
+
+  const avatar = profile?.avatarUrl ? (
+    <img
+      src={profile.avatarUrl}
+      alt=""
+      className="h-8 w-8 rounded-lg object-cover"
+      referrerPolicy="no-referrer"
+    />
+  ) : (
+    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-medium">
+      {admin?.username?.charAt(0).toUpperCase() ?? 'U'}
+    </div>
+  )
 
   return (
     <SidebarMenu>
@@ -90,12 +106,10 @@ function NavUser() {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton size="lg" className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-medium">
-                {admin?.username?.charAt(0).toUpperCase() ?? 'U'}
-              </div>
+              {avatar}
               <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-medium">{admin?.username ?? 'User'}</span>
-                <span className="truncate text-xs text-muted-foreground">{admin?.email ?? ''}</span>
+                <span className="truncate font-medium">{displayName}</span>
+                <span className="truncate text-xs text-muted-foreground">{displayDetail}</span>
               </div>
               <EllipsisVerticalIcon className="ml-auto size-4" />
             </SidebarMenuButton>
@@ -108,12 +122,10 @@ function NavUser() {
           >
             <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-medium">
-                  {admin?.username?.charAt(0).toUpperCase() ?? 'U'}
-                </div>
+                {avatar}
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">{admin?.username ?? 'User'}</span>
-                  <span className="truncate text-xs text-muted-foreground">{admin?.email ?? ''}</span>
+                  <span className="truncate font-medium">{displayName}</span>
+                  <span className="truncate text-xs text-muted-foreground">{displayDetail}</span>
                 </div>
               </div>
             </DropdownMenuLabel>
@@ -143,7 +155,8 @@ export default function ProtectedLayout({ children }: ProtectedLayoutProps) {
           <SidebarHeader>
             <SidebarTrigger className="-ml-1" />
             <SidebarMenuButton asChild className="data-[slot=sidebar-menu-button]:p-1.5!">
-              <a href="/dashboard">
+              <a href="/dashboard" className="flex items-center gap-2">
+                <img src="/favicon.png" alt="" className="size-6 rounded-sm" />
                 <span className="text-base font-semibold">Sains Data</span>
               </a>
             </SidebarMenuButton>

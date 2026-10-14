@@ -8,6 +8,7 @@ const inter = Inter({ subsets: ['latin'] })
 export const metadata: Metadata = {
   title: 'Sains Data - Fakultas Ilmu Komputer | Universitas Saintek Muhammadiyah',
   description: 'Pusat data dan informasi akreditasi Program Studi Sains Data, Fakultas Ilmu Komputer, Universitas Saintek Muhammadiyah.',
+  icons: { icon: '/favicon.png' },
 }
 
 export default function RootLayout({

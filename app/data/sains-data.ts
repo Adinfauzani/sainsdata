@@ -20,7 +20,7 @@ export const sainsDataProfile = {
   skAkreditasi: '178/SK/LAM-INFOKOM/Ak.S/S/IX/2025',
   berlakuHingga: '2030',
   website: 'https://saintekmu.ac.id',
-  email: 'sainsdata@saintekmu.ac.id',
+  email: 'info@saintekmu.ac.id',
 }
 
 // Data Visi, Misi, Tujuan, Sasaran UNIVERSITAS (dari BAB II Pedoman Penyusunan Visi Misi Universitas)

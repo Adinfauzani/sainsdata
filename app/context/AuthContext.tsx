@@ -1,24 +1,33 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { AuthContext, type AuthUser } from '@/context/auth'
-import { api, getToken, setToken } from '@/lib/api'
+import { api, setToken } from '@/lib/api'
+import type { AuthProfile } from '@/types'
+import { toast } from 'sonner'
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [admin, setAdmin] = useState<AuthUser | null>(null)
+  const [profile, setProfile] = useState<AuthProfile | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     let cancelled = false
 
     async function restore() {
-      if (!getToken()) {
-        setLoading(false)
-        return
-      }
+      // Sessions may be backed by an HttpOnly cookie (GitHub OAuth) or a
+      // localStorage bearer token (email/password). Always ask the server so
+      // both paths are restored; a 401 simply means "not logged in".
       try {
-        const res = await api<{ admin: AuthUser }>('/api/auth/me')
-        if (!cancelled) setAdmin(res.admin)
+        const res = await api<{ admin: AuthUser; profile: AuthProfile | null }>('/api/auth/me')
+        if (!cancelled) {
+          setAdmin(res.admin)
+          setProfile(res.profile)
+        }
       } catch {
-        setToken(null)
+        if (!cancelled) {
+          setToken(null)
+          setAdmin(null)
+          setProfile(null)
+        }
       } finally {
         if (!cancelled) setLoading(false)
       }
@@ -37,6 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })
     setToken(res.token)
     setAdmin(res.admin)
+    setProfile(null)
   }, [])
 
   const register = useCallback(async (email: string, username: string, password: string) => {
@@ -46,6 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })
     setToken(res.token)
     setAdmin(res.admin)
+    setProfile(null)
   }, [])
 
   const logout = useCallback(async () => {
@@ -56,11 +67,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     setToken(null)
     setAdmin(null)
+    setProfile(null)
+    toast.success('Berhasil keluar')
   }, [])
 
   const value = useMemo(
-    () => ({ admin, loading, login, register, logout }),
-    [admin, loading, login, register, logout]
+    () => ({ admin, profile, loading, login, register, logout }),
+    [admin, profile, loading, login, register, logout]
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

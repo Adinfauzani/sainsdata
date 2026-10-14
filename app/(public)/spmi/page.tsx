@@ -47,15 +47,15 @@ function SpmiContent() {
         selectCategory(id)
         setOpen(false)
       }}
-      aria-label="Kategori SPMI"
+      aria-label="Kategori BPM"
     />
   )
 
   return (
     <>
       <PageHeader
-        eyebrow="SPMI"
-        title="Dokumen Sistem Penjaminan Mutu Internal"
+        eyebrow="BPM"
+        title="Dokumen Badan Penjaminan Mutu"
         description="Kebijakan, manual, standar, formulir, dan dokumen pendukung yang mengatur siklus mutu Plan-Do-Check-Act."
       />
 
@@ -146,7 +146,7 @@ function SpmiContent() {
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent side="right" className="flex w-80 max-w-[85vw] flex-col gap-0 p-0">
           <SheetHeader className="flex-row items-center justify-between border-b border-border px-4 py-3.5">
-            <SheetTitle className="text-sm">Kategori SPMI</SheetTitle>
+            <SheetTitle className="text-sm">Kategori BPM</SheetTitle>
             <Button variant="ghost" size="icon-sm" aria-label="Tutup" onClick={() => setOpen(false)}>
               <X className="size-4" />
             </Button>

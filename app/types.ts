@@ -140,3 +140,10 @@ export interface AuthUser {
   username: string
   role: UserRole
 }
+
+export interface AuthProfile {
+  provider: 'github'
+  login: string
+  name: string
+  avatarUrl: string | null
+}

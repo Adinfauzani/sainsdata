@@ -1,8 +1,31 @@
-import { spmiCategories } from '@/data/spmi'
 import type { TreeNode } from '@/types'
+import { bpmNavigation, type BpmRouteNode } from '@/data/bpm'
 
-export const spmiTreeNodes: TreeNode[] = spmiCategories.map((category) => ({
-  id: `spmi-${category.id}`,
-  label: category.nama,
-  href: `/spmi?kategori=${category.id}`,
-}))
+export interface MainNavLink {
+  href: string
+  label: string
+}
+
+/**
+ * Top-level site navigation shared by the desktop navbar and the mobile drawer.
+ * The BPM entry opens the BPM information architecture tree.
+ */
+export const mainNavLinks: MainNavLink[] = [
+  { href: '/', label: 'Home' },
+  { href: '/profile', label: 'Profile' },
+  { href: '/bpm/profile', label: 'BPM' },
+  { href: '/akreditasi', label: 'Akreditasi' },
+  { href: '/contact', label: 'Contact' },
+]
+
+function toTreeNodes(nodes: BpmRouteNode[]): TreeNode[] {
+  return nodes.map((node) => ({
+    id: node.id,
+    label: node.navLabel,
+    href: node.pathname,
+    children: node.children?.length ? toTreeNodes(node.children) : undefined,
+  }))
+}
+
+/** BPM navigation tree derived from the centralized route registry. */
+export const bpmTreeNodes: TreeNode[] = toTreeNodes(bpmNavigation)

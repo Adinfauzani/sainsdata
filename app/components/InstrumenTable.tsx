@@ -21,6 +21,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
 import { api } from '@/lib/api'
 import { useAuth } from '@/context/auth'
+import { toast } from 'sonner'
 import type { DokumenUpload, InstrumenSection } from '@/types'
 
 const columnLabels = [
@@ -370,8 +371,13 @@ export function InstrumenTable({ mode }: { mode: 'public' | 'admin' }) {
     const key = `${sectionNo}.${rowId}`
 
     void runMutation(async () => {
-      if (add) await addChild(sectionNo, rowId, doc)
-      else await updateChildDoc(sectionNo, rowId, childNo, doc)
+      if (add) {
+        await addChild(sectionNo, rowId, doc)
+        toast.success('Dokumen berhasil ditambahkan')
+      } else {
+        await updateChildDoc(sectionNo, rowId, childNo, doc)
+        toast.success('Dokumen berhasil diperbarui')
+      }
       if (add) setExpanded((prev) => new Set(prev).add(key))
     }).finally(() => setFormTarget(null))
   }

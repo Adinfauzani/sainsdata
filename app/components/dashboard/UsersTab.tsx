@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell, TableFooter } from '@/components/ui/table'
 import { api } from '@/lib/api'
+import { toast } from 'sonner'
 
 interface User {
   id: number
@@ -143,6 +144,7 @@ function UserManagement() {
       }
       closeDialog()
       loadUsers()
+      toast.success(isEditing ? 'Pengguna berhasil diperbarui' : 'Pengguna berhasil ditambahkan')
     } catch (err) {
       setFormError(err instanceof Error ? err.message : 'Gagal menyimpan')
     } finally {
@@ -157,8 +159,9 @@ function UserManagement() {
     try {
       await api(`/api/users/${id}`, { method: 'DELETE' })
       loadUsers()
+      toast.success('Pengguna berhasil dihapus')
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Gagal menghapus')
+      toast.error(err instanceof Error ? err.message : 'Gagal menghapus')
     } finally {
       setDeletingId(null)
     }

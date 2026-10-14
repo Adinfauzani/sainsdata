@@ -1,4 +1,5 @@
 import bcrypt from 'bcryptjs'
+import { createHmac, timingSafeEqual } from 'node:crypto'
 import { unlink } from 'node:fs/promises'
 import { Pool } from 'pg'
 
@@ -27,6 +28,134 @@ export function bearerToken(req: Request): string | null {
   const header = req.headers.get('authorization')
   if (!header?.startsWith('Bearer ')) return null
   return header.slice(7)
+}
+
+/* -------------------------------------------------------------------------- */
+/* Session cookies (GitHub OAuth)                                             */
+/* -------------------------------------------------------------------------- */
+
+export const SESSION_COOKIE = 'akreditasi_session'
+export const PROFILE_COOKIE = 'akreditasi_profile'
+const OAUTH_STATE_COOKIE = 'akreditasi_oauth_state'
+const SESSION_MAX_AGE = 7 * 24 * 60 * 60 // 7 days, matches the sessions table
+
+export function parseCookies(req: Request): Record<string, string> {
+  const header = req.headers.get('cookie')
+  if (!header) return {}
+  const cookies: Record<string, string> = {}
+  for (const part of header.split(';')) {
+    const index = part.indexOf('=')
+    if (index === -1) continue
+    const name = part.slice(0, index).trim()
+    if (!name) continue
+    try {
+      cookies[name] = decodeURIComponent(part.slice(index + 1).trim())
+    } catch {
+      cookies[name] = part.slice(index + 1).trim()
+    }
+  }
+  return cookies
+}
+
+function serializeCookie(name: string, value: string, maxAge: number): string {
+  const parts = [`${name}=${encodeURIComponent(value)}`, 'Path=/', 'HttpOnly', 'SameSite=Lax']
+  parts.push(maxAge <= 0 ? 'Max-Age=0' : `Max-Age=${maxAge}`)
+  if (process.env.NODE_ENV === 'production') parts.push('Secure')
+  return parts.join('; ')
+}
+
+export const clearCookie = (name: string): string => serializeCookie(name, '', 0)
+
+/** Accepts the localStorage bearer token or the HttpOnly OAuth session cookie. */
+export function sessionToken(req: Request): string | null {
+  return bearerToken(req) ?? parseCookies(req)[SESSION_COOKIE] ?? null
+}
+
+/* -------------------------------------------------------------------------- */
+/* GitHub OAuth                                                               */
+/* -------------------------------------------------------------------------- */
+
+const GITHUB_AUTHORIZE_URL = 'https://github.com/login/oauth/authorize'
+const GITHUB_TOKEN_URL = 'https://github.com/login/oauth/access_token'
+const GITHUB_USER_URL = 'https://api.github.com/user'
+const GITHUB_EMAILS_URL = 'https://api.github.com/user/emails'
+
+function githubConfig() {
+  const clientId = process.env.AUTH_GITHUB_ID
+  const clientSecret = process.env.AUTH_GITHUB_SECRET
+  const secret = process.env.AUTH_SECRET
+  return { clientId, clientSecret, secret, configured: Boolean(clientId && clientSecret && secret) }
+}
+
+function requestOrigin(req: Request): string {
+  const url = new URL(req.url)
+  const proto = req.headers.get('x-forwarded-proto')?.split(',')[0]?.trim() || url.protocol.replace(':', '')
+  const host = req.headers.get('x-forwarded-host')?.split(',')[0]?.trim() || req.headers.get('host') || url.host
+  return `${proto}://${host}`
+}
+
+function githubRedirectUri(req: Request): string {
+  return process.env.AUTH_GITHUB_REDIRECT_URI || `${requestOrigin(req)}/api/auth/github/callback`
+}
+
+function signState(value: string, secret: string): string {
+  const signature = createHmac('sha256', secret).update(value).digest('base64url')
+  return `${value}.${signature}`
+}
+
+function verifyState(signed: string, secret: string): boolean {
+  const index = signed.lastIndexOf('.')
+  if (index <= 0) return false
+  const value = signed.slice(0, index)
+  const expected = signState(value, secret)
+  const a = Buffer.from(signed)
+  const b = Buffer.from(expected)
+  return a.length === b.length && timingSafeEqual(a, b)
+}
+
+async function exchangeGithubCode(code: string, redirectUri: string) {
+  const { clientId, clientSecret } = githubConfig()
+  const res = await fetch(GITHUB_TOKEN_URL, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', accept: 'application/json' },
+    body: JSON.stringify({ client_id: clientId, client_secret: clientSecret, code, redirect_uri: redirectUri }),
+    cache: 'no-store',
+  })
+  if (!res.ok) return null
+  const data = (await res.json()) as { access_token?: string }
+  return data.access_token ?? null
+}
+
+interface GithubProfile {
+  id: number
+  login: string
+  name: string | null
+  avatar_url: string | null
+  email: string | null
+}
+
+async function fetchGithubProfile(accessToken: string): Promise<{ profile: GithubProfile; email: string | null } | null> {
+  const headers = {
+    authorization: `Bearer ${accessToken}`,
+    accept: 'application/vnd.github+json',
+    'user-agent': 'akreditasi-bpm',
+    'x-github-api-version': '2022-11-28',
+  }
+  const userRes = await fetch(GITHUB_USER_URL, { headers, cache: 'no-store' })
+  if (!userRes.ok) return null
+  const profile = (await userRes.json()) as GithubProfile
+
+  let email = profile.email
+  if (!email) {
+    const emailsRes = await fetch(GITHUB_EMAILS_URL, { headers, cache: 'no-store' })
+    if (emailsRes.ok) {
+      const emails = (await emailsRes.json()) as Array<{ email: string; primary: boolean; verified: boolean }>
+      const preferred = emails.find((entry) => entry.primary && entry.verified) ?? emails.find((entry) => entry.verified)
+      email = preferred?.email ?? null
+    }
+  }
+
+  return { profile, email }
 }
 
 export async function adminFromToken(token: string | null) {
@@ -132,13 +261,22 @@ export async function handleApi(req: Request, path: string): Promise<Response | 
       'INSERT INTO sessions (token, admin_id, expires_at) VALUES ($1, $2, now() + $3 * interval \'1 millisecond\')',
       [token, admin.id, 7 * 24 * 60 * 60 * 1000]
     )
-    return json({ token, admin: { id: admin.id, email: admin.email, username: admin.username, role: admin.role } })
+    const headers = new Headers({ 'content-type': 'application/json' })
+    headers.append('set-cookie', serializeCookie(SESSION_COOKIE, token, SESSION_MAX_AGE))
+    headers.append('set-cookie', clearCookie(PROFILE_COOKIE))
+    return new Response(
+      JSON.stringify({ token, admin: { id: admin.id, email: admin.email, username: admin.username, role: admin.role } }),
+      { status: 200, headers }
+    )
   }
 
   if (path === '/api/auth/logout' && req.method === 'POST') {
-    const token = bearerToken(req)
+    const token = sessionToken(req)
     if (token) await pool.query('DELETE FROM sessions WHERE token = $1', [token])
-    return json({ ok: true })
+    const headers = new Headers({ 'content-type': 'application/json' })
+    headers.append('set-cookie', clearCookie(SESSION_COOKIE))
+    headers.append('set-cookie', clearCookie(PROFILE_COOKIE))
+    return new Response(JSON.stringify({ ok: true }), { status: 200, headers })
   }
 
   if (path === '/api/auth/register' && req.method === 'POST') {
@@ -171,13 +309,117 @@ export async function handleApi(req: Request, path: string): Promise<Response | 
   }
 
   if (path === '/api/auth/me' && req.method === 'GET') {
-    const admin = await adminFromToken(bearerToken(req))
+    const admin = await adminFromToken(sessionToken(req))
     if (!admin) return json({ error: 'Belum login' }, 401)
-    return json({ admin: { id: admin.id, email: admin.email, username: admin.username, role: admin.role } })
+    const rawProfile = parseCookies(req)[PROFILE_COOKIE]
+    let profile: unknown = null
+    if (rawProfile) {
+      try {
+        profile = JSON.parse(rawProfile)
+      } catch {
+        profile = null
+      }
+    }
+    return json({
+      admin: { id: admin.id, email: admin.email, username: admin.username, role: admin.role },
+      profile,
+    })
+  }
+
+  if (path === '/api/auth/github' && req.method === 'GET') {
+    const config = githubConfig()
+    if (!config.configured) {
+      return json({ error: 'Login GitHub belum dikonfigurasi pada server' }, 501)
+    }
+    const state = signState(crypto.randomUUID(), config.secret as string)
+    const authorize = new URL(GITHUB_AUTHORIZE_URL)
+    authorize.searchParams.set('client_id', config.clientId as string)
+    authorize.searchParams.set('redirect_uri', githubRedirectUri(req))
+    authorize.searchParams.set('scope', 'read:user user:email')
+    authorize.searchParams.set('state', state)
+    authorize.searchParams.set('allow_signup', 'false')
+
+    const headers = new Headers({ location: authorize.toString() })
+    headers.append('set-cookie', serializeCookie(OAUTH_STATE_COOKIE, state, 600))
+    return new Response(null, { status: 302, headers })
+  }
+
+  if (path === '/api/auth/github/callback' && req.method === 'GET') {
+    const config = githubConfig()
+    const fail = (reason: string) => {
+      const headers = new Headers({ location: `/login?error=${reason}` })
+      headers.append('set-cookie', clearCookie(OAUTH_STATE_COOKIE))
+      return new Response(null, { status: 302, headers })
+    }
+
+    if (!config.configured) return json({ error: 'Login GitHub belum dikonfigurasi pada server' }, 501)
+
+    const url = new URL(req.url)
+    const code = url.searchParams.get('code')
+    const state = url.searchParams.get('state')
+    const expected = parseCookies(req)[OAUTH_STATE_COOKIE]
+
+    if (!code || !state || !expected || state !== expected || !verifyState(state, config.secret as string)) {
+      return fail('oauth_state')
+    }
+
+    const accessToken = await exchangeGithubCode(code, githubRedirectUri(req))
+    if (!accessToken) return fail('oauth_token')
+
+    const result = await fetchGithubProfile(accessToken)
+    if (!result) return fail('oauth_profile')
+
+    const email = result.email?.trim().toLowerCase()
+    if (!email) return fail('oauth_email')
+
+    const { profile } = result
+    let admin = (
+      await pool.query('SELECT id, email, username, role, is_active FROM admins WHERE email = $1', [email])
+    ).rows[0]
+
+    if (!admin) {
+      let username = profile.login
+      const taken = await pool.query('SELECT 1 FROM admins WHERE username = $1', [username])
+      if (taken.rows.length > 0) username = `${profile.login}-${profile.id}`
+
+      // OAuth accounts get a random unusable password hash. Privileges are
+      // never granted from an external identity provider.
+      const randomHash = await bcrypt.hash(crypto.randomUUID(), 12)
+      admin = (
+        await pool.query(
+          `INSERT INTO admins (email, username, password_hash, role)
+           VALUES ($1, $2, $3, 'user')
+           RETURNING id, email, username, role, is_active`,
+          [email, username, randomHash]
+        )
+      ).rows[0]
+      await logAudit(admin.id, 'USER_LOGIN_GITHUB', 'user', String(admin.id), null, { provider: 'github', login: profile.login }, req)
+    }
+
+    if (!admin.is_active) return fail('oauth_inactive')
+
+    const token = crypto.randomUUID()
+    await pool.query(
+      'INSERT INTO sessions (token, admin_id, expires_at) VALUES ($1, $2, now() + $3 * interval \'1 millisecond\')',
+      [token, admin.id, SESSION_MAX_AGE * 1000]
+    )
+
+    const profilePayload = JSON.stringify({
+      provider: 'github',
+      login: profile.login,
+      name: profile.name ?? profile.login,
+      avatarUrl: profile.avatar_url ?? null,
+    })
+
+    const headers = new Headers({ location: '/dashboard' })
+    headers.append('set-cookie', serializeCookie(SESSION_COOKIE, token, SESSION_MAX_AGE))
+    headers.append('set-cookie', serializeCookie(PROFILE_COOKIE, profilePayload, SESSION_MAX_AGE))
+    headers.append('set-cookie', clearCookie(OAUTH_STATE_COOKIE))
+    return new Response(null, { status: 302, headers })
   }
 
   if (path === '/api/stats' && req.method === 'GET') {
-    const admin = await adminFromToken(bearerToken(req))
+    const admin = await adminFromToken(sessionToken(req))
     if (!admin) return json({ error: 'Belum login' }, 401)
 
     const { rows } = await pool.query(
@@ -228,7 +470,7 @@ export async function handleApi(req: Request, path: string): Promise<Response | 
   }
 
   if (path === '/api/instrumen/children' && req.method === 'POST') {
-    const admin = await adminFromToken(bearerToken(req))
+    const admin = await adminFromToken(sessionToken(req))
     if (!admin) return json({ error: 'Belum login' }, 401)
 
     const body = await readJson(req)
@@ -276,7 +518,7 @@ export async function handleApi(req: Request, path: string): Promise<Response | 
   }
 
   if (path === '/api/instrumen/children' && req.method === 'PUT') {
-    const admin = await adminFromToken(bearerToken(req))
+    const admin = await adminFromToken(sessionToken(req))
     if (!admin) return json({ error: 'Belum login' }, 401)
 
     const body = await readJson(req)
@@ -321,7 +563,7 @@ export async function handleApi(req: Request, path: string): Promise<Response | 
   }
 
   if (path === '/api/instrumen/children' && req.method === 'DELETE') {
-    const admin = await adminFromToken(bearerToken(req))
+    const admin = await adminFromToken(sessionToken(req))
     if (!admin) return json({ error: 'Belum login' }, 401)
 
     const body = await readJson(req)
@@ -347,7 +589,7 @@ export async function handleApi(req: Request, path: string): Promise<Response | 
 
   // User management APIs
   if (path === '/api/users' && req.method === 'GET') {
-    const admin = await adminFromToken(bearerToken(req))
+    const admin = await adminFromToken(sessionToken(req))
     if (!admin) return json({ error: 'Belum login' }, 401)
     if (!(await requireRole(admin, ['sudo', 'admin']))) return json({ error: 'Akses ditolak' }, 403)
 
@@ -400,7 +642,7 @@ export async function handleApi(req: Request, path: string): Promise<Response | 
   }
 
   if (path === '/api/users' && req.method === 'POST') {
-    const admin = await adminFromToken(bearerToken(req))
+    const admin = await adminFromToken(sessionToken(req))
     if (!admin) return json({ error: 'Belum login' }, 401)
     if (!(await requireRole(admin, ['sudo']))) return json({ error: 'Hanya SUDO yang dapat membuat pengguna' }, 403)
 
@@ -431,7 +673,7 @@ export async function handleApi(req: Request, path: string): Promise<Response | 
   }
 
   if (path.startsWith('/api/users/') && req.method === 'GET') {
-    const admin = await adminFromToken(bearerToken(req))
+    const admin = await adminFromToken(sessionToken(req))
     if (!admin) return json({ error: 'Belum login' }, 401)
     if (!(await requireRole(admin, ['sudo', 'admin']))) return json({ error: 'Akses ditolak' }, 403)
 
@@ -445,7 +687,7 @@ export async function handleApi(req: Request, path: string): Promise<Response | 
   }
 
   if (path.startsWith('/api/users/') && req.method === 'PUT') {
-    const admin = await adminFromToken(bearerToken(req))
+    const admin = await adminFromToken(sessionToken(req))
     if (!admin) return json({ error: 'Belum login' }, 401)
     if (!(await requireRole(admin, ['sudo']))) return json({ error: 'Hanya SUDO yang dapat mengubah pengguna' }, 403)
 
@@ -525,7 +767,7 @@ export async function handleApi(req: Request, path: string): Promise<Response | 
   }
 
   if (path.startsWith('/api/users/') && req.method === 'DELETE') {
-    const admin = await adminFromToken(bearerToken(req))
+    const admin = await adminFromToken(sessionToken(req))
     if (!admin) return json({ error: 'Belum login' }, 401)
     if (!(await requireRole(admin, ['sudo']))) return json({ error: 'Hanya SUDO yang dapat menghapus pengguna' }, 403)
 
@@ -549,7 +791,7 @@ export async function handleApi(req: Request, path: string): Promise<Response | 
 
   // Audit log API (SUDO only)
   if (path === '/api/audit-log' && req.method === 'GET') {
-    const admin = await adminFromToken(bearerToken(req))
+    const admin = await adminFromToken(sessionToken(req))
     if (!admin) return json({ error: 'Belum login' }, 401)
     if (!(await requireRole(admin, ['sudo']))) return json({ error: 'Hanya SUDO yang dapat melihat audit log' }, 403)
 

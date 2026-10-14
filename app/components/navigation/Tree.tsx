@@ -22,7 +22,11 @@ function hasChildren(node: TreeNode): boolean {
 
 function isNodeActive(node: TreeNode, activeId?: string, pathname?: string): boolean {
   if (activeId && node.id === activeId) return true
-  if (pathname && node.href && node.href === pathname) return true
+  if (pathname && node.href) {
+    if (node.href === pathname) return true
+    // Expanded category nodes stay highlighted on their nested pages.
+    if (hasChildren(node) && pathname.startsWith(`${node.href}/`)) return true
+  }
   return false
 }
 
@@ -34,18 +38,25 @@ function TreeItem({ node, depth, activeId, expandedIds, onToggle, onNavigate }: 
 
   const Icon = expandable ? (expanded ? FolderOpen : Folder) : FileText
 
+  const toggleButton = expandable ? (
+    <button
+      type="button"
+      aria-label={expanded ? `Tutup ${node.label}` : `Buka ${node.label}`}
+      aria-expanded={expanded}
+      className={cn(
+        'flex size-5 shrink-0 items-center justify-center rounded-[4px] text-muted-foreground/70 transition-transform duration-150 hover:bg-accent',
+        expanded && 'rotate-90'
+      )}
+      onClick={() => onToggle(node.id)}
+    >
+      <ChevronRight className="size-3.5" />
+    </button>
+  ) : (
+    <span role="presentation" className="flex size-5 shrink-0 items-center justify-center" />
+  )
+
   const content = (
     <>
-      <span
-        role="presentation"
-        className={cn(
-          'flex size-5 shrink-0 items-center justify-center text-muted-foreground/70 transition-transform duration-150',
-          expandable && 'rounded-[4px] hover:bg-accent',
-          expanded && 'rotate-90'
-        )}
-      >
-        {expandable ? <ChevronRight className="size-3.5" /> : null}
-      </span>
       <Icon
         className={cn(
           'size-3.5 shrink-0',
@@ -65,13 +76,15 @@ function TreeItem({ node, depth, activeId, expandedIds, onToggle, onNavigate }: 
   )
 
   const classes = cn(
-    'group flex w-full items-center gap-1.5 rounded-md py-1.5 pr-2 text-left text-sm leading-none transition-colors duration-150 outline-none',
-    'focus-visible:ring-2 focus-visible:ring-ring/60',
+    'group flex w-full items-center gap-1.5 rounded-md py-1.5 pr-2 text-left text-sm leading-none transition-colors duration-150',
     depth === 0 ? 'pl-1.5' : 'pl-2',
     active
       ? 'bg-primary/8 font-medium text-primary'
       : 'text-foreground/85 hover:bg-accent hover:text-foreground'
   )
+
+  const innerClasses =
+    'flex min-w-0 flex-1 items-center gap-1.5 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring/60'
 
   return (
     <li>
@@ -84,24 +97,22 @@ function TreeItem({ node, depth, activeId, expandedIds, onToggle, onNavigate }: 
             active && 'bg-primary/40'
           )}
         />
-        {expandable ? (
-          <button
-            type="button"
-            className={classes}
-            aria-expanded={expanded}
-            onClick={() => onToggle(node.id)}
-          >
-            {content}
-          </button>
-        ) : node.href ? (
-          <Link href={node.href} className={classes} onClick={onNavigate}>
-            {content}
-          </Link>
-        ) : (
-          <button type="button" className={classes} onClick={onToggle.bind(null, node.id)}>
-            {content}
-          </button>
-        )}
+        <div className={classes}>
+          {toggleButton}
+          {node.href ? (
+            <Link href={node.href} className={innerClasses} onClick={onNavigate}>
+              {content}
+            </Link>
+          ) : (
+            <button
+              type="button"
+              className={innerClasses}
+              onClick={() => onToggle(node.id)}
+            >
+              {content}
+            </button>
+          )}
+        </div>
       </div>
 
       {expandable && expanded ? (

@@ -2,21 +2,15 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LogOut, X } from 'lucide-react'
+import { LayoutDashboard, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Tree } from '@/components/navigation/Tree'
 import { useAuth } from '@/context/auth'
 import { cn } from '@/lib/utils'
-import { spmiTreeNodes } from '@/data/treeNodes'
+import { bpmTreeNodes, mainNavLinks } from '@/data/treeNodes'
 
-const navLinks = [
-  { href: '/', label: 'Home' },
-  { href: '/profile', label: 'Profile' },
-  { href: '/spmi', label: 'SPMI' },
-  { href: '/akreditasi', label: 'Akreditasi' },
-  { href: '/contact', label: 'Contact' },
-]
+const navLinks = mainNavLinks
 
 interface MobileNavProps {
   open: boolean
@@ -26,7 +20,7 @@ interface MobileNavProps {
 export function MobileNav({ open, onOpenChange }: MobileNavProps) {
   const pathname = usePathname()
   const close = () => onOpenChange(false)
-  const { admin, logout } = useAuth()
+  const { admin } = useAuth()
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -53,38 +47,20 @@ export function MobileNav({ open, onOpenChange }: MobileNavProps) {
             </Link>
           ))}
 
-          {admin && (admin.role === 'admin' || admin.role === 'sudo') ? (
-            <Link
-              href="/dashboard"
-              onClick={close}
-              className={cn(
-                'block rounded-md px-3 py-2 text-sm font-medium transition-colors',
-                pathname === '/dashboard' ? 'bg-primary/8 text-primary' : 'text-foreground/85 hover:bg-accent'
-              )}
-            >
-              Dashboard
-            </Link>
-          ) : null}
-
           <div className="pt-3">
             <p className="px-3 pb-1.5 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
-              SPMI
+              BPM
             </p>
-            <Tree nodes={spmiTreeNodes} onNodeSelect={close} aria-label="Submenu SPMI" />
+            <Tree nodes={bpmTreeNodes} defaultExpandedIds={[]} onNodeSelect={close} aria-label="Submenu BPM" />
           </div>
 
-          {admin ? (
+          {admin && (admin.role === 'admin' || admin.role === 'sudo') ? (
             <div className="border-t border-border pt-3">
-              <Button
-                variant="ghost"
-                className="w-full justify-start"
-                onClick={() => {
-                  close()
-                  void logout()
-                }}
-              >
-                <LogOut className="size-4" />
-                Keluar
+              <Button asChild variant="ghost" className="w-full justify-start">
+                <Link href="/dashboard" onClick={close}>
+                  <LayoutDashboard className="size-4" />
+                  Dashboard
+                </Link>
               </Button>
             </div>
           ) : null}

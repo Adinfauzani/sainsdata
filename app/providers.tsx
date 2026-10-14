@@ -1,6 +1,7 @@
 'use client'
 
 import { TooltipProvider } from '@/components/ui/tooltip'
+import { Toaster } from '@/components/ui/sonner'
 import { AuthProvider } from '@/context/AuthContext'
 import type { ReactNode } from 'react'
 
@@ -10,6 +11,7 @@ export function Providers({ children }: { children: ReactNode }) {
       <TooltipProvider>
         {children}
       </TooltipProvider>
+      <Toaster position="top-right" closeButton richColors />
     </AuthProvider>
   )
 }
