@@ -322,18 +322,23 @@ export function InstrumenTable({ mode }: { mode: 'public' | 'admin' }) {
     }
   }, [])
 
-  const runMutation = useCallback(async (action: () => Promise<unknown>) => {
-    setBusy(true)
-    setLoadError('')
-    try {
-      await action()
-      await loadSections()
-    } catch (err) {
-      setLoadError(err instanceof Error ? err.message : 'Operasi gagal')
-    } finally {
-      setBusy(false)
-    }
-  }, [loadSections])
+  const runMutation = useCallback(
+    async (action: () => Promise<unknown>) => {
+      setBusy(true)
+      setLoadError('')
+      try {
+        await action()
+        await loadSections()
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Operasi gagal'
+        setLoadError(message)
+        toast.error(message)
+      } finally {
+        setBusy(false)
+      }
+    },
+    [loadSections]
+  )
 
   const uploadChildFile = useCallback(
     (target: ChildRef, file: File) => {
@@ -343,8 +348,20 @@ export function InstrumenTable({ mode }: { mode: 'public' | 'admin' }) {
         form.append('sectionNo', String(target.sectionNo))
         form.append('rowId', target.rowId)
         form.append('childNo', String(target.childNo))
-        await api('/api/instrumen/upload', { method: 'POST', body: form })
-        toast.success('File berhasil diunggah')
+
+        const toastId = toast.loading(`Mengunggah ${file.name}…`)
+        try {
+          await api('/api/instrumen/upload', { method: 'POST', body: form })
+        } catch (err) {
+          // Error ditampilkan oleh `runMutation`.
+          toast.dismiss(toastId)
+          throw err
+        }
+
+        toast.success('File berhasil diunggah', {
+          id: toastId,
+          description: file.name,
+        })
       })
     },
     [runMutation]
@@ -565,15 +582,20 @@ export function InstrumenTable({ mode }: { mode: 'public' | 'admin' }) {
       // Public visitors only see files that were uploaded from the dashboard.
       // Plain `doc.link` values (e.g. legacy/placeholder URLs) are not surfaced.
       if (item.fileUrl) {
+        const label = isPdfFile(item.fileName ?? item.namaFile) ? 'Lihat PDF' : 'Lihat Dokumen'
+
         return (
           <Button
             type="button"
             variant="outline"
-            size="sm"
-            onClick={() => setViewTarget({ sectionNo: item.sectionNo, rowId: item.rowId, childNo: item.childNo! })}
+            size="icon-sm"
+            aria-label={label}
+            title={label}
+            onClick={() =>
+              setViewTarget({ sectionNo: item.sectionNo, rowId: item.rowId, childNo: item.childNo! })
+            }
           >
             <Eye />
-            {isPdfFile(item.fileName ?? item.namaFile) ? 'Lihat PDF' : 'Lihat Dokumen'}
           </Button>
         )
       }

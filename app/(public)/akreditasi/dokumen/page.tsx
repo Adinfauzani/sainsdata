@@ -98,12 +98,20 @@ export default function DokumenAkreditasiPage() {
         // Only files uploaded from the dashboard are exposed to the public.
         if (!doc.fileUrl) return <span className="text-muted-foreground">-</span>
 
+        const label =
+          doc.format === 'PDF' || doc.fileName?.toLowerCase().endsWith('.pdf')
+            ? 'Lihat PDF'
+            : 'Lihat Dokumen'
+
         return (
-          <Button variant="outline" size="sm" onClick={() => setViewer(doc)}>
+          <Button
+            variant="outline"
+            size="icon-sm"
+            aria-label={label}
+            title={label}
+            onClick={() => setViewer(doc)}
+          >
             <Eye />
-            {doc.format === 'PDF' || doc.fileName?.toLowerCase().endsWith('.pdf')
-              ? 'Lihat PDF'
-              : 'Lihat Dokumen'}
           </Button>
         )
       },
