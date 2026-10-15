@@ -48,13 +48,11 @@ export async function POST(req: NextRequest) {
       fileUrl = blob.url
     } catch (err) {
       console.error('[upload] gagal menyimpan ke Vercel Blob:', err)
-      return json(
-        {
-          error:
-            'Gagal mengunggah: penyimpanan berkas (Vercel Blob) tidak tersedia. Buat/sambungkan store Blob baru pada project Vercel, lalu redeploy.',
-        },
-        502
-      )
+      const raw = err instanceof Error ? err.message : ''
+      const error = /private store/i.test(raw)
+        ? 'Store Blob yang tersambung bersifat private, sedangkan berkas ini dilayani sebagai publik. Buat store Blob dengan akses Public lalu sambungkan ke project ini, kemudian redeploy.'
+        : 'Gagal mengunggah: penyimpanan berkas (Vercel Blob) tidak tersedia. Pastikan Blob store (akses Public) sudah disambungkan ke project Vercel ini, lalu redeploy.'
+      return json({ error }, 502)
     }
   } else {
     const storedName = `${crypto.randomUUID()}${ext}`
