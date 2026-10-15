@@ -355,27 +355,25 @@ export function InstrumenTable({ mode }: { mode: 'public' | 'admin' }) {
 
     for (const section of sections) {
       for (const row of section.rows) {
-        const children = row.children ?? []
         const nomor = `${row.no}.${row.id}`
 
-        if (children.length === 0) {
-          list.push({
-            id: `${section.no}.${row.id}`,
-            sectionNo: section.no,
-            rowId: row.id,
-            childNo: null,
-            no: nomor,
-            kriteria: section.nama,
-            subKriteria: row.subKriteria,
-            indikator: row.indikator,
-            namaFile: '',
-            deskripsi: '',
-            canAdd: true,
-          })
-          continue
-        }
+        // The indicator line always stays visible; uploaded documents are
+        // nested below it as `1.a.1`, `1.a.2`, …
+        list.push({
+          id: `${section.no}.${row.id}`,
+          sectionNo: section.no,
+          rowId: row.id,
+          childNo: null,
+          no: nomor,
+          kriteria: section.nama,
+          subKriteria: row.subKriteria,
+          indikator: row.indikator,
+          namaFile: '',
+          deskripsi: '',
+          canAdd: true,
+        })
 
-        children.forEach((child, index) => {
+        for (const child of row.children ?? []) {
           list.push({
             id: `${section.no}.${row.id}.${child.no}`,
             sectionNo: section.no,
@@ -389,9 +387,9 @@ export function InstrumenTable({ mode }: { mode: 'public' | 'admin' }) {
             deskripsi: child.doc?.deskripsi ?? '',
             fileName: child.fileName,
             fileUrl: child.fileUrl,
-            canAdd: index === 0,
+            canAdd: false,
           })
-        })
+        }
       }
     }
 
@@ -588,9 +586,14 @@ export function InstrumenTable({ mode }: { mode: 'public' | 'admin' }) {
     {
       accessorKey: 'no',
       header: 'No',
-      cell: ({ row }) => (
-        <span className="font-mono text-xs font-medium tabular-nums">{row.original.no}</span>
-      ),
+      cell: ({ row }) =>
+        row.original.childNo === null ? (
+          <span className="font-mono text-xs font-semibold tabular-nums">{row.original.no}</span>
+        ) : (
+          <span className="ps-4 font-mono text-xs tabular-nums text-muted-foreground">
+            {row.original.no}
+          </span>
+        ),
     },
     { accessorKey: 'kriteria', header: 'Kriteria' },
     { accessorKey: 'subKriteria', header: 'Sub Kriteria' },
@@ -640,6 +643,8 @@ export function InstrumenTable({ mode }: { mode: 'public' | 'admin' }) {
         data={items}
         searchFilter={searchFilter}
         searchPlaceholder="Cari nomor, kriteria, indikator…"
+        rowClassName={(item) => (item.childNo === null ? 'bg-muted/40' : undefined)}
+        initialPageSize={25}
         emptyMessage={emptyMessage}
       />
 

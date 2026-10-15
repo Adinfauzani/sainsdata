@@ -44,6 +44,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { cn } from '@/lib/utils'
 
 export type { DataTableColumn, DataTableFeatures } from '@/components/data-table-features'
 
@@ -55,6 +56,8 @@ interface DataTableProps<TData extends RowData> {
   searchPlaceholder?: string
   /** Extra controls rendered at the end of the toolbar. */
   toolbar?: React.ReactNode
+  /** Per-row classes, e.g. to highlight group/parent rows. */
+  rowClassName?: (row: TData) => string | undefined
   emptyMessage?: string
   initialPageSize?: number
   className?: string
@@ -71,6 +74,7 @@ export function DataTable<TData extends RowData>({
   searchFilter,
   searchPlaceholder = 'Cari…',
   toolbar,
+  rowClassName,
   emptyMessage = 'Tidak ada data.',
   initialPageSize = 10,
   className,
@@ -203,7 +207,10 @@ export function DataTable<TData extends RowData>({
           <TableBody>
             {rows.length ? (
               rows.map((row) => (
-                <TableRow key={row.id} className="transition-colors hover:bg-muted/40">
+                <TableRow
+                  key={row.id}
+                  className={cn('transition-colors hover:bg-muted/40', rowClassName?.(row.original))}
+                >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id} className="align-top whitespace-normal">
                       <FlexRender cell={cell} />
