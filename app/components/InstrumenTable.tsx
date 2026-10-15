@@ -1,11 +1,15 @@
 'use client'
 
-import { Fragment, useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import {
-  ChevronDown,
-  Download,
+  ExternalLink,
+  Eye,
+  Pencil,
   Plus,
+  Trash2,
+  Upload,
 } from 'lucide-react'
+import { DataTable, type DataTableColumn } from '@/components/DataTable'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -18,39 +22,21 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { cn } from '@/lib/utils'
 import { api } from '@/lib/api'
 import { useAuth } from '@/context/auth'
 import { toast } from 'sonner'
 import type { DokumenUpload, InstrumenSection } from '@/types'
+import { cn } from '@/lib/utils'
 
-const columnLabels = [
-  'No',
-  'Kriteria',
-  'Sub Kriteria',
-  'Indikator',
-  'Nama File',
-  'Deskripsi',
-]
+/** Mirrors `UPLOAD_ALLOWED` in `app/lib/api-handler.ts`. */
+const UPLOAD_ACCEPT = '.pdf,.doc,.docx,.txt,.rtf,.csv,.xls,.xlsx,.ppt,.pptx'
 
-const adminColumnLabels = [
-  'Penjelasan Prodi',
-]
-
-const columnWidths = {
-  'No': { width: '3.5rem', minWidth: '3rem' },
-  'Kriteria': { width: '10rem', minWidth: '8rem' },
-  'Sub Kriteria': { width: '12rem', minWidth: '9rem' },
-  'Indikator': { width: '18rem', minWidth: '12rem' },
-  'Nama File': { width: '10rem', minWidth: '8rem' },
-  'Deskripsi': { width: '14rem', minWidth: '10rem' },
-  'Penjelasan Prodi': { width: '16rem', minWidth: '12rem' },
-  'Aksi': { width: '9rem', minWidth: '7rem' },
+interface FormTarget {
+  mode: 'add' | 'update'
+  sectionNo: number
+  rowId: string
+  childNo: number | null
 }
-
-type FormTarget =
-  | { mode: 'add'; sectionNo: number; rowId: string }
-  | { mode: 'update'; sectionNo: number; rowId: string; childNo: number }
 
 interface ChildRef {
   sectionNo: number
@@ -58,32 +44,29 @@ interface ChildRef {
   childNo: number
 }
 
-interface RowCellsProps {
+/**
+ * A single rendered line of the instrument table. Indicators without documents
+ * still get a row (`childNo: null`) so the number sequence stays complete and
+ * the "Tambah" action keeps a home.
+ */
+interface InstrumenItem {
+  id: string
+  sectionNo: number
+  rowId: string
+  childNo: number | null
+  no: string
   kriteria: string
   subKriteria: string
   indikator: string
-  namaFile?: string
-  deskripsi?: string
+  namaFile: string
+  deskripsi: string
+  fileName?: string
+  fileUrl?: string
+  canAdd: boolean
 }
 
-function RowCells({
-  kriteria,
-  subKriteria,
-  indikator,
-  namaFile = '',
-  deskripsi = '',
-}: RowCellsProps) {
-  return (
-    <>
-      <td className="border border-border px-3 py-2.5 sm:px-4 sm:py-3 align-top break-words" style={columnWidths.Kriteria}>{kriteria}</td>
-      <td className="border border-border px-3 py-2.5 sm:px-4 sm:py-3 align-top break-words" style={columnWidths['Sub Kriteria']}>
-        {subKriteria}
-      </td>
-      <td className="border border-border px-3 py-2.5 sm:px-4 sm:py-3 align-top leading-relaxed break-words" style={columnWidths.Indikator}>{indikator}</td>
-      <td className="border border-border px-3 py-2.5 sm:px-4 sm:py-3 align-top break-words" style={columnWidths['Nama File']}>{namaFile}</td>
-      <td className="border border-border px-3 py-2.5 sm:px-4 sm:py-3 align-top break-words" style={columnWidths.Deskripsi}>{deskripsi}</td>
-    </>
-  )
+function isPdfFile(fileName?: string) {
+  return fileName?.toLowerCase().endsWith('.pdf') ?? false
 }
 
 function DocFormDialog({
@@ -219,10 +202,10 @@ function DocPreviewDialog({
     let cancelled = false
     ;(async () => {
       try {
-        const blob = await (await fetch(fileUrl)).blob()
+        const response = await fetch(fileUrl)
+        const blob = await response.blob()
         const { renderAsync } = await import('docx-preview')
         if (cancelled || !containerRef.current) return
-        containerRef.current.innerHTML = ''
         await renderAsync(blob, containerRef.current, containerRef.current)
         if (!cancelled) setStatus('ready')
       } catch {
@@ -232,7 +215,7 @@ function DocPreviewDialog({
     return () => {
       cancelled = true
     }
-  }, [fileUrl, isDocx])
+  }, [isDocx, fileUrl])
 
   return (
     <Dialog
@@ -241,34 +224,51 @@ function DocPreviewDialog({
         if (!open) onClose()
       }}
     >
-      <DialogContent className="max-w-3xl">
+      <DialogContent className="max-w-4xl">
         <DialogHeader>
-          <DialogTitle className="truncate pr-8">{fileName}</DialogTitle>
-          <DialogDescription>Preview dokumen</DialogDescription>
+          <DialogTitle className="truncate">{fileName}</DialogTitle>
+          <DialogDescription>Pratinjau dokumen</DialogDescription>
         </DialogHeader>
 
-        <div className="max-h-[60vh] overflow-auto rounded-md border border-border bg-muted/30">
-          {status === 'loading' ? (
-            <p className="p-6 text-center text-sm text-muted-foreground">Memuat preview…</p>
-          ) : null}
+        <div className="max-h-[70vh] min-h-64 overflow-auto rounded-md border bg-muted/30">
           {status === 'error' ? (
             <p className="p-6 text-center text-sm text-muted-foreground">
-              Preview tidak tersedia untuk format .{ext}. Silakan download file-nya.
+              Pratinjau tidak tersedia untuk file ini.{' '}
+              <a
+                href={fileUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary underline"
+              >
+                Buka di tab baru
+              </a>
+              .
             </p>
-          ) : null}
-          {isDocx ? (
-            <div ref={containerRef} className={cn('p-3', status !== 'ready' && 'hidden')} />
+          ) : isDocx ? (
+            <div ref={containerRef} className={cn('p-4', status === 'loading' && 'hidden')} />
           ) : isInline ? (
             <iframe
               src={fileUrl}
-              title={`Preview ${fileName}`}
-              className="h-[60vh] w-full border-0 bg-background"
+              title={`Pratinjau ${fileName}`}
+              className="h-[70vh] w-full border-0 bg-background"
             />
           ) : (
             <p className="p-6 text-center text-sm text-muted-foreground">
-              Preview tidak tersedia untuk format .{ext}. Silakan download file-nya.
+              Format .{ext} tidak dapat dipratinjau.{' '}
+              <a
+                href={fileUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary underline"
+              >
+                Buka di tab baru
+              </a>
+              .
             </p>
           )}
+          {status === 'loading' ? (
+            <p className="p-6 text-center text-sm text-muted-foreground">Memuat pratinjau…</p>
+          ) : null}
         </div>
 
         <DialogFooter>
@@ -276,9 +276,9 @@ function DocPreviewDialog({
             Tutup
           </Button>
           <Button asChild>
-            <a href={fileUrl} download={fileName}>
-              <Download className="size-3.5" />
-              Download
+            <a href={fileUrl} target="_blank" rel="noopener noreferrer">
+              <ExternalLink />
+              Buka
             </a>
           </Button>
         </DialogFooter>
@@ -290,12 +290,10 @@ function DocPreviewDialog({
 export function InstrumenTable({ mode }: { mode: 'public' | 'admin' }) {
   const { admin } = useAuth()
   const canEdit = mode === 'admin' && !!admin
-  const totalColumns =
-    columnLabels.length + (mode === 'admin' ? adminColumnLabels.length + 1 : 0)
   const [sections, setSections] = useState<InstrumenSection[]>([])
-  const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [formTarget, setFormTarget] = useState<FormTarget | null>(null)
   const [viewTarget, setViewTarget] = useState<ChildRef | null>(null)
+  const [confirmTarget, setConfirmTarget] = useState<ChildRef | null>(null)
   const [loadState, setLoadState] = useState<'loading' | 'ready' | 'error'>('loading')
   const [loadError, setLoadError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -324,15 +322,7 @@ export function InstrumenTable({ mode }: { mode: 'public' | 'admin' }) {
     }
   }, [])
 
-  const toggleRow = (key: string) =>
-    setExpanded((prev) => {
-      const next = new Set(prev)
-      if (next.has(key)) next.delete(key)
-      else next.add(key)
-      return next
-    })
-
-  const runMutation = async (action: () => Promise<unknown>) => {
+  const runMutation = useCallback(async (action: () => Promise<unknown>) => {
     setBusy(true)
     setLoadError('')
     try {
@@ -343,52 +333,111 @@ export function InstrumenTable({ mode }: { mode: 'public' | 'admin' }) {
     } finally {
       setBusy(false)
     }
-  }
+  }, [loadSections])
 
-  const addChild = (sectionNo: number, rowId: string, doc: DokumenUpload) =>
-    api('/api/instrumen/children', {
-      method: 'POST',
-      body: JSON.stringify({ sectionNo, rowId, doc }),
-    })
+  const uploadChildFile = useCallback(
+    (target: ChildRef, file: File) => {
+      void runMutation(async () => {
+        const form = new FormData()
+        form.append('file', file)
+        form.append('sectionNo', String(target.sectionNo))
+        form.append('rowId', target.rowId)
+        form.append('childNo', String(target.childNo))
+        await api('/api/instrumen/upload', { method: 'POST', body: form })
+        toast.success('File berhasil diunggah')
+      })
+    },
+    [runMutation]
+  )
 
-  const updateChildDoc = (
-    sectionNo: number,
-    rowId: string,
-    childNo: number,
-    doc: DokumenUpload
-  ) =>
-    api('/api/instrumen/children', {
-      method: 'PUT',
-      body: JSON.stringify({ sectionNo, rowId, childNo, doc }),
-    })
+  const items = useMemo<InstrumenItem[]>(() => {
+    const list: InstrumenItem[] = []
+
+    for (const section of sections) {
+      for (const row of section.rows) {
+        const children = row.children ?? []
+        const nomor = `${row.no}.${row.id}`
+
+        if (children.length === 0) {
+          list.push({
+            id: `${section.no}.${row.id}`,
+            sectionNo: section.no,
+            rowId: row.id,
+            childNo: null,
+            no: nomor,
+            kriteria: section.nama,
+            subKriteria: row.subKriteria,
+            indikator: row.indikator,
+            namaFile: '',
+            deskripsi: '',
+            canAdd: true,
+          })
+          continue
+        }
+
+        children.forEach((child, index) => {
+          list.push({
+            id: `${section.no}.${row.id}.${child.no}`,
+            sectionNo: section.no,
+            rowId: row.id,
+            childNo: child.no,
+            no: `${nomor}.${child.no}`,
+            kriteria: child.doc?.kriteria ?? section.nama,
+            subKriteria: child.subKriteria,
+            indikator: child.indikator,
+            namaFile: child.doc?.namaFile ?? '',
+            deskripsi: child.doc?.deskripsi ?? '',
+            fileName: child.fileName,
+            fileUrl: child.fileUrl,
+            canAdd: index === 0,
+          })
+        })
+      }
+    }
+
+    return list
+  }, [sections])
+
+  const searchFilter = useCallback((item: InstrumenItem, query: string) => {
+    return [item.no, item.kriteria, item.subKriteria, item.indikator, item.namaFile, item.deskripsi]
+      .join(' ')
+      .toLowerCase()
+      .includes(query)
+  }, [])
 
   const saveDoc = (doc: DokumenUpload) => {
     if (!formTarget) return
-    const add = formTarget.mode === 'add'
-    const sectionNo = formTarget.sectionNo
-    const rowId = formTarget.rowId
-    const childNo = formTarget.mode === 'update' ? formTarget.childNo : 0
-    const key = `${sectionNo}.${rowId}`
+    const target = formTarget
+    const isAdd = target.mode === 'add'
 
     void runMutation(async () => {
-      if (add) {
-        await addChild(sectionNo, rowId, doc)
+      if (isAdd) {
+        await api('/api/instrumen/children', {
+          method: 'POST',
+          body: JSON.stringify({ sectionNo: target.sectionNo, rowId: target.rowId, doc }),
+        })
         toast.success('Dokumen berhasil ditambahkan')
       } else {
-        await updateChildDoc(sectionNo, rowId, childNo, doc)
+        await api('/api/instrumen/children', {
+          method: 'PUT',
+          body: JSON.stringify({
+            sectionNo: target.sectionNo,
+            rowId: target.rowId,
+            childNo: target.childNo,
+            doc,
+          }),
+        })
         toast.success('Dokumen berhasil diperbarui')
       }
-      if (add) setExpanded((prev) => new Set(prev).add(key))
     }).finally(() => setFormTarget(null))
   }
 
   const activeForm = (() => {
     if (!formTarget) return null
     const section = sections.find((s) => s.no === formTarget.sectionNo)
-    const row = section?.rows.find(
-      (r) => r.no === formTarget.sectionNo && r.id === formTarget.rowId
-    )
+    const row = section?.rows.find((r) => r.id === formTarget.rowId)
     if (!section || !row) return null
+
     if (formTarget.mode === 'add') {
       return {
         mode: 'add' as const,
@@ -396,11 +445,12 @@ export function InstrumenTable({ mode }: { mode: 'public' | 'admin' }) {
         rowId: row.id,
         childNo: null,
         kriteria: section.nama,
-        subKriteria: '',
-        indikator: '',
+        subKriteria: row.subKriteria,
+        indikator: row.indikator,
         initial: undefined,
       }
     }
+
     const child = row.children?.find((c) => c.no === formTarget.childNo)
     if (!child) return null
     return {
@@ -418,184 +468,180 @@ export function InstrumenTable({ mode }: { mode: 'public' | 'admin' }) {
   const activeView = (() => {
     if (!viewTarget) return null
     const section = sections.find((s) => s.no === viewTarget.sectionNo)
-    const row = section?.rows.find(
-      (r) => r.no === viewTarget.sectionNo && r.id === viewTarget.rowId
-    )
+    const row = section?.rows.find((r) => r.id === viewTarget.rowId)
     const child = row?.children?.find((c) => c.no === viewTarget.childNo)
     if (!child?.fileUrl) return null
-    return { fileName: child.fileName ?? 'Dokumen', fileUrl: child.fileUrl }
+    return { fileName: child.fileName ?? child.doc?.namaFile ?? 'Dokumen', fileUrl: child.fileUrl }
   })()
 
+  const actionColumn: DataTableColumn<InstrumenItem> = {
+    id: 'aksi',
+    header: 'Aksi',
+    enableSorting: false,
+    enableHiding: false,
+    cell: ({ row }) => {
+      const item = row.original
+      const child: ChildRef | null =
+        item.childNo === null
+          ? null
+          : { sectionNo: item.sectionNo, rowId: item.rowId, childNo: item.childNo }
+
+      const tambah = item.canAdd ? (
+        <Button
+          key="tambah"
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={busy}
+          onClick={() =>
+            setFormTarget({
+              mode: 'add',
+              sectionNo: item.sectionNo,
+              rowId: item.rowId,
+              childNo: null,
+            })
+          }
+        >
+          <Plus />
+          Tambah
+        </Button>
+      ) : null
+
+      if (mode === 'admin') {
+        if (!canEdit) return <span className="text-muted-foreground">-</span>
+
+        return (
+          <div className="flex flex-wrap items-center gap-1">
+            {tambah}
+            {child ? (
+              <>
+                <Button
+                  asChild
+                  variant="outline"
+                  size="sm"
+                  className={cn(busy && 'pointer-events-none opacity-50')}
+                >
+                  <label title="Unggah file">
+                    <Upload />
+                    <span className="sr-only">Unggah file</span>
+                    <input
+                      type="file"
+                      className="sr-only"
+                      accept={UPLOAD_ACCEPT}
+                      onChange={(event) => {
+                        const file = event.target.files?.[0]
+                        if (file && !busy) uploadChildFile(child, file)
+                        event.target.value = ''
+                      }}
+                    />
+                  </label>
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon-sm"
+                  aria-label="Ubah dokumen"
+                  title="Ubah dokumen"
+                  disabled={busy}
+                  onClick={() => setFormTarget({ mode: 'update', ...child })}
+                >
+                  <Pencil />
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon-sm"
+                  aria-label="Hapus dokumen"
+                  title="Hapus dokumen"
+                  disabled={busy}
+                  onClick={() => setConfirmTarget(child)}
+                >
+                  <Trash2 />
+                </Button>
+              </>
+            ) : null}
+          </div>
+        )
+      }
+
+      // Public visitors only see files that were uploaded from the dashboard.
+      // Plain `doc.link` values (e.g. legacy/placeholder URLs) are not surfaced.
+      if (item.fileUrl) {
+        return (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setViewTarget({ sectionNo: item.sectionNo, rowId: item.rowId, childNo: item.childNo! })}
+          >
+            <Eye />
+            {isPdfFile(item.fileName ?? item.namaFile) ? 'Lihat PDF' : 'Lihat Dokumen'}
+          </Button>
+        )
+      }
+
+      return <span className="text-muted-foreground">-</span>
+    },
+  }
+
+  const columns: DataTableColumn<InstrumenItem>[] = [
+    {
+      accessorKey: 'no',
+      header: 'No',
+      cell: ({ row }) => (
+        <span className="font-mono text-xs font-medium tabular-nums">{row.original.no}</span>
+      ),
+    },
+    { accessorKey: 'kriteria', header: 'Kriteria' },
+    { accessorKey: 'subKriteria', header: 'Sub Kriteria' },
+    {
+      accessorKey: 'indikator',
+      header: 'Indikator',
+      cell: ({ row }) => <div className="min-w-[14rem]">{row.original.indikator}</div>,
+    },
+    {
+      accessorKey: 'namaFile',
+      header: 'Nama File',
+      cell: ({ row }) => (
+        <div className="min-w-[8rem]">
+          {row.original.namaFile || <span className="text-muted-foreground">-</span>}
+        </div>
+      ),
+    },
+    {
+      accessorKey: 'deskripsi',
+      header: 'Deskripsi',
+      cell: ({ row }) => (
+        <div className="min-w-[10rem]">
+          {row.original.deskripsi || <span className="text-muted-foreground">-</span>}
+        </div>
+      ),
+    },
+    actionColumn,
+  ]
+
+  const emptyMessage =
+    loadState === 'loading'
+      ? 'Memuat data…'
+      : loadState === 'error'
+        ? loadError || 'Gagal memuat data.'
+        : 'Belum ada data instrumen.'
+
   return (
-    <div className="mx-auto w-full max-w-7xl overflow-x-auto px-4 py-8 sm:px-6">
+    <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6">
       {loadState === 'ready' && loadError ? (
         <p className="mb-4 text-sm font-medium text-destructive" role="alert">
           {loadError}
         </p>
       ) : null}
-      <table className="w-full border-collapse text-sm sm:text-base" style={{ tableLayout: 'fixed' }}>
-        <thead>
-          <tr className="bg-muted">
-            {columnLabels.map((label) => (
-              <th
-                key={label}
-                scope="col"
-                className="border border-border px-3 py-2.5 sm:px-4 sm:py-3 text-start text-xs sm:text-sm font-semibold tracking-wider uppercase"
-                style={columnWidths[label as keyof typeof columnWidths]}
-              >
-                {label}
-              </th>
-            ))}
-            {mode === 'admin' && adminColumnLabels.map((label) => (
-              <th
-                key={label}
-                scope="col"
-                className="border border-border px-3 py-2.5 sm:px-4 sm:py-3 text-start text-xs sm:text-sm font-semibold tracking-wider uppercase"
-                style={columnWidths[label as keyof typeof columnWidths]}
-              >
-                {label}
-              </th>
-            ))}
-            {mode === 'admin' && (
-              <th
-                scope="col"
-                className="border border-border px-3 py-2.5 sm:px-4 sm:py-3 text-start text-xs sm:text-sm font-semibold tracking-wider uppercase"
-                style={columnWidths.Aksi}
-              >
-                Aksi
-              </th>
-            )}
-          </tr>
-        </thead>
 
-        <tbody>
-          {loadState === 'loading' ? (
-            <tr>
-              <td
-                colSpan={totalColumns}
-                className="border border-border px-3 py-8 sm:px-4 sm:py-10 text-center text-muted-foreground"
-              >
-                Memuat data…
-              </td>
-            </tr>
-          ) : loadState === 'error' ? (
-            <tr>
-              <td
-                colSpan={totalColumns}
-                className="border border-border px-3 py-8 sm:px-4 sm:py-10 text-center text-destructive"
-              >
-                {loadError}
-              </td>
-            </tr>
-          ) : (
-            sections.map((section) => (
-              <Fragment key={section.no}>
-                <tr>
-                  <td
-                    colSpan={totalColumns}
-                    className="border border-border bg-primary/10 px-3 py-2 sm:px-4 sm:py-3 text-start text-sm font-semibold text-primary"
-                  >
-                    {section.no}. {section.nama}
-                  </td>
-                </tr>
-
-                {section.rows.map((row) => {
-                  const key = `${row.no}.${row.id}`
-                  const isExpanded = expanded.has(key)
-
-                  return (
-                    <Fragment key={key}>
-                      <tr className="transition-colors hover:bg-muted/40">
-                        <td className="border border-border px-3 py-2.5 sm:px-4 sm:py-3 align-top">
-                          <span className="flex items-center gap-1 font-mono text-xs sm:text-sm font-medium">
-                            {row.children?.length ? (
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon-sm"
-                                aria-expanded={isExpanded}
-                                aria-label={`Turunan ${key}`}
-                                onClick={() => toggleRow(key)}
-                              >
-                                <ChevronDown
-                                  className={cn(
-                                    'size-3.5 sm:size-4 transition-transform duration-150',
-                                    !isExpanded && '-rotate-90'
-                                  )}
-                                />
-                              </Button>
-                            ) : null}
-                            {key}
-                          </span>
-                        </td>
-                        <RowCells
-                          kriteria={section.nama}
-                          subKriteria={row.subKriteria}
-                          indikator={row.indikator}
-                          namaFile=""
-                          deskripsi=""
-                        />
-                        {mode === 'admin' && (
-                          <>
-                            <td className="border border-border px-3 py-2.5 sm:px-4 sm:py-3 align-top leading-relaxed break-words">
-                              {row.penjelasanProdi || <span className="text-muted-foreground">-</span>}
-                            </td>
-                            <td className="border border-border px-3 py-2.5 sm:px-4 sm:py-3 align-top" style={columnWidths.Aksi}>
-                              {canEdit ? (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  disabled={busy}
-                                  onClick={() => setFormTarget({ mode: 'add', sectionNo: row.no, rowId: row.id })}
-                                >
-                                  <Plus className="size-3.5 sm:size-4" />
-                                  <span className="hidden sm:inline">Tambah</span>
-                                </Button>
-                              ) : (
-                                <span className="text-muted-foreground">-</span>
-                              )}
-                            </td>
-                          </>
-                        )}
-                      </tr>
-
-                      {isExpanded
-                        ? row.children?.map((child) => (
-                            <tr
-                              key={`${key}.${child.no}`}
-                              className="bg-muted/30 transition-colors hover:bg-muted/50"
-                            >
-                              <td className="border border-border ps-10 pe-3 py-2.5 sm:ps-12 sm:pe-4 sm:py-3 align-top font-mono text-xs text-muted-foreground">
-                                {key}.{child.no}
-                              </td>
-                              <RowCells
-                                kriteria={child.doc?.kriteria ?? section.nama}
-                                subKriteria={child.subKriteria}
-                                indikator={child.indikator}
-                                namaFile={child.doc?.namaFile ?? ''}
-                                deskripsi={child.doc?.deskripsi ?? ''}
-                              />
-{mode === 'admin' && (
-  <>
-    <td className="border border-border px-3 py-2.5 sm:px-4 sm:py-3 align-top">
-      <span className="text-muted-foreground">-</span>
-    </td>
-    <td className="border border-border px-3 py-2.5 sm:px-4 sm:py-3 align-top" style={columnWidths.Aksi}>
-      <span className="text-muted-foreground">-</span>
-    </td>
-  </>
-)}
-                            </tr>
-                          ))
-                        : null}
-                    </Fragment>
-                  )
-                })}
-              </Fragment>
-            ))
-          )}
-        </tbody>
-      </table>
+      <DataTable
+        columns={columns}
+        data={items}
+        searchFilter={searchFilter}
+        searchPlaceholder="Cari nomor, kriteria, indikator…"
+        emptyMessage={emptyMessage}
+      />
 
       {activeForm ? (
         <DocFormDialog
@@ -617,6 +663,45 @@ export function InstrumenTable({ mode }: { mode: 'public' | 'admin' }) {
           fileUrl={activeView.fileUrl}
           onClose={() => setViewTarget(null)}
         />
+      ) : null}
+
+      {confirmTarget ? (
+        <Dialog
+          open
+          onOpenChange={(open) => {
+            if (!open) setConfirmTarget(null)
+          }}
+        >
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Hapus dokumen</DialogTitle>
+              <DialogDescription>
+                Dokumen ini akan dihapus permanen. Lanjutkan?
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setConfirmTarget(null)} disabled={busy}>
+                Batal
+              </Button>
+              <Button
+                variant="destructive"
+                disabled={busy}
+                onClick={() => {
+                  const target = confirmTarget
+                  void runMutation(async () => {
+                    await api('/api/instrumen/children', {
+                      method: 'DELETE',
+                      body: JSON.stringify(target),
+                    })
+                    toast.success('Dokumen berhasil dihapus')
+                  }).finally(() => setConfirmTarget(null))
+                }}
+              >
+                Hapus
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       ) : null}
     </div>
   )
