@@ -1,16 +1,16 @@
 import { put } from '@vercel/blob'
 import {
   adminFromToken,
-  bearerToken,
   json,
   pool,
+  sessionToken,
   UPLOAD_ALLOWED,
   UPLOAD_MAX_BYTES,
 } from '@/lib/api-handler'
 import { NextRequest } from 'next/server'
 
 export async function POST(req: NextRequest) {
-  const admin = await adminFromToken(bearerToken(req))
+  const admin = await adminFromToken(sessionToken(req))
   if (!admin) return json({ error: 'Belum login' }, 401)
 
   const form = await req.formData()
