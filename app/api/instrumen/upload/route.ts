@@ -39,12 +39,23 @@ export async function POST(req: NextRequest) {
   let fileUrl: string
   if (process.env.BLOB_READ_WRITE_TOKEN) {
     const storedName = `${crypto.randomUUID()}${ext}`
-    const blob = await put(storedName, file, {
-      access: 'public',
-      addRandomSuffix: false,
-      contentType: file.type || undefined,
-    })
-    fileUrl = blob.url
+    try {
+      const blob = await put(storedName, file, {
+        access: 'public',
+        addRandomSuffix: false,
+        contentType: file.type || undefined,
+      })
+      fileUrl = blob.url
+    } catch (err) {
+      console.error('[upload] gagal menyimpan ke Vercel Blob:', err)
+      return json(
+        {
+          error:
+            'Gagal mengunggah: penyimpanan berkas (Vercel Blob) tidak tersedia. Buat/sambungkan store Blob baru pada project Vercel, lalu redeploy.',
+        },
+        502
+      )
+    }
   } else {
     const storedName = `${crypto.randomUUID()}${ext}`
     const uploadsDir = `${process.cwd()}/server/uploads`
