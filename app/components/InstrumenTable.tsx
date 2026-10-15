@@ -10,6 +10,7 @@ import {
   Upload,
 } from 'lucide-react'
 import { DataTable, type DataTableColumn } from '@/components/DataTable'
+import { documentFileSrc } from '@/lib/instrumen-documents'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -486,7 +487,13 @@ export function InstrumenTable({ mode }: { mode: 'public' | 'admin' }) {
     const row = section?.rows.find((r) => r.id === viewTarget.rowId)
     const child = row?.children?.find((c) => c.no === viewTarget.childNo)
     if (!child?.fileUrl) return null
-    return { fileName: child.fileName ?? child.doc?.namaFile ?? 'Dokumen', fileUrl: child.fileUrl }
+    return {
+      fileName: child.fileName ?? child.doc?.namaFile ?? 'Dokumen',
+      fileUrl: child.fileUrl,
+      sectionNo: section!.no,
+      rowId: row!.id,
+      childNo: child.no,
+    }
   })()
 
   const actionColumn: DataTableColumn<InstrumenItem> = {
@@ -687,7 +694,7 @@ export function InstrumenTable({ mode }: { mode: 'public' | 'admin' }) {
         <DocPreviewDialog
           key={activeView.fileUrl}
           fileName={activeView.fileName}
-          fileUrl={activeView.fileUrl}
+          fileUrl={documentFileSrc(activeView) ?? ''}
           onClose={() => setViewTarget(null)}
         />
       ) : null}

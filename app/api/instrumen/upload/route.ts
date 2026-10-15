@@ -1,4 +1,3 @@
-import { put } from '@vercel/blob'
 import {
   adminFromToken,
   json,
@@ -7,6 +6,7 @@ import {
   UPLOAD_ALLOWED,
   UPLOAD_MAX_BYTES,
 } from '@/lib/api-handler'
+import { putBlobFile } from '@/lib/blob-files'
 import { NextRequest } from 'next/server'
 
 export async function POST(req: NextRequest) {
@@ -37,22 +37,20 @@ export async function POST(req: NextRequest) {
   if (!childRes.rows[0]) return json({ error: 'Baris tidak ditemukan' }, 404)
 
   let fileUrl: string
-  if (process.env.BLOB_READ_WRITE_TOKEN) {
+  if (process.env.BLOB_READ_WRITE_TOKEN || process.env.BLOB_STORE_ID) {
     const storedName = `${crypto.randomUUID()}${ext}`
     try {
-      const blob = await put(storedName, file, {
-        access: 'public',
-        addRandomSuffix: false,
-        contentType: file.type || undefined,
-      })
+      const blob = await putBlobFile(storedName, file, file.type)
       fileUrl = blob.url
     } catch (err) {
       console.error('[upload] gagal menyimpan ke Vercel Blob:', err)
-      const raw = err instanceof Error ? err.message : ''
-      const error = /private store/i.test(raw)
-        ? 'Store Blob yang tersambung bersifat private, sedangkan berkas ini dilayani sebagai publik. Buat store Blob dengan akses Public lalu sambungkan ke project ini, kemudian redeploy.'
-        : 'Gagal mengunggah: penyimpanan berkas (Vercel Blob) tidak tersedia. Pastikan Blob store (akses Public) sudah disambungkan ke project Vercel ini, lalu redeploy.'
-      return json({ error }, 502)
+      return json(
+        {
+          error:
+            'Gagal mengunggah berkas ke penyimpanan. Pastikan store Vercel Blob masih tersambung ke project ini, lalu redeploy.',
+        },
+        502
+      )
     }
   } else {
     const storedName = `${crypto.randomUUID()}${ext}`

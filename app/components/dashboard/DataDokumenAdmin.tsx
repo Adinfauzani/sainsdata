@@ -16,6 +16,7 @@ import {
 import { api } from '@/lib/api'
 import {
   collectInstrumenDocuments,
+  documentFileSrc,
   documentSearchText,
   type InstrumenDocumentItem,
 } from '@/lib/instrumen-documents'
@@ -106,7 +107,7 @@ export default function DataDokumenAdmin() {
       enableHiding: false,
       cell: ({ row }) => {
         const doc = row.original
-        const url = doc.fileUrl || doc.link
+        const url = documentFileSrc(doc) ?? doc.link
         if (!url) return <span className="text-muted-foreground">-</span>
         return (
           <Button variant="outline" size="sm" asChild>

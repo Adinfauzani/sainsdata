@@ -13,9 +13,30 @@ export interface InstrumenDocumentItem {
   jenis: 'Dokumen Instrumen' | 'File Terunggah'
   /** Uppercase extension (PDF, DOCX…) or `LINK` when only a link exists. */
   format: string
+  /** Primary key of the row in `instrumen_children`. */
+  sectionNo: number
+  rowId: string
+  childNo: number
   fileName?: string
   fileUrl?: string
   link?: string
+}
+
+/**
+ * URL yang dipakai untuk membuka berkas. Berkas pada store Vercel Blob yang
+ * *private* tidak bisa dibuka langsung dari browser, jadi dialihkan ke route
+ * penyaji milik aplikasi (`/api/instrumen/file/...`). Berkas di store *public*
+ * (atau fallback lokal `/uploads/...`) dipakai apa adanya.
+ */
+export function documentFileSrc(doc: {
+  fileUrl?: string
+  sectionNo: number
+  rowId: string
+  childNo: number
+}): string | undefined {
+  if (!doc.fileUrl) return undefined
+  if (!doc.fileUrl.includes('.private.blob.')) return doc.fileUrl
+  return `/api/instrumen/file/${doc.sectionNo}/${doc.rowId}/${doc.childNo}`
 }
 
 /**
@@ -40,6 +61,9 @@ export function collectInstrumenDocuments(
         documents.push({
           id: `${section.no}.${row.id}.${child.no}`,
           nomor: `${row.no}.${row.id}.${child.no}`,
+          sectionNo: section.no,
+          rowId: row.id,
+          childNo: child.no,
           kriteria: section.nama,
           subKriteria: child.subKriteria || row.subKriteria,
           indikator: child.indikator || row.indikator,

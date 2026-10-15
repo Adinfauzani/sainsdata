@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { api } from '@/lib/api'
 import {
   collectInstrumenDocuments,
+  documentFileSrc,
   documentSearchText,
   type InstrumenDocumentItem,
 } from '@/lib/instrumen-documents'
@@ -155,7 +156,7 @@ export default function DokumenAkreditasiPage() {
       {viewer ? (
         <PdfViewer
           key={viewer.id}
-          url={viewer.fileUrl ?? ''}
+          url={documentFileSrc(viewer) ?? ''}
           title={viewer.judul}
           mimeType={
             viewer.format === 'PDF' ? 'application/pdf' : 'application/octet-stream'
