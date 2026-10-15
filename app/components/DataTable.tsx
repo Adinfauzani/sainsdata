@@ -54,6 +54,8 @@ interface DataTableProps<TData extends RowData> {
   /** Client-side search over the raw rows. Receives a lower-cased query. */
   searchFilter?: (row: TData, query: string) => boolean
   searchPlaceholder?: string
+  /** Called whenever the search box changes (raw value, not lower-cased). */
+  onQueryChange?: (query: string) => void
   /** Extra controls rendered at the end of the toolbar. */
   toolbar?: React.ReactNode
   /** Per-row classes, e.g. to highlight group/parent rows. */
@@ -73,6 +75,7 @@ export function DataTable<TData extends RowData>({
   data,
   searchFilter,
   searchPlaceholder = 'Cari…',
+  onQueryChange,
   toolbar,
   rowClassName,
   emptyMessage = 'Tidak ada data.',
@@ -126,7 +129,10 @@ export function DataTable<TData extends RowData>({
               <Input
                 type="search"
                 value={query}
-                onChange={(event) => setQuery(event.target.value)}
+                onChange={(event) => {
+                  setQuery(event.target.value)
+                  onQueryChange?.(event.target.value)
+                }}
                 placeholder={searchPlaceholder}
                 aria-label={searchPlaceholder}
                 className="ps-9"

@@ -2,6 +2,10 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import {
+  ChevronDown,
+  ChevronRight,
+  ChevronsDownUp,
+  ChevronsUpDown,
   ExternalLink,
   Eye,
   Pencil,
@@ -11,6 +15,7 @@ import {
 } from 'lucide-react'
 import { DataTable, type DataTableColumn } from '@/components/DataTable'
 import { documentFileSrc } from '@/lib/instrumen-documents'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -64,6 +69,8 @@ interface InstrumenItem {
   fileName?: string
   fileUrl?: string
   canAdd: boolean
+  /** Jumlah baris turunan (`1.a.1`, `1.a.2`, …) pada baris indikator. */
+  childCount: number
 }
 
 function isPdfFile(fileName?: string) {
@@ -298,6 +305,10 @@ export function InstrumenTable({ mode }: { mode: 'public' | 'admin' }) {
   const [loadState, setLoadState] = useState<'loading' | 'ready' | 'error'>('loading')
   const [loadError, setLoadError] = useState('')
   const [busy, setBusy] = useState(false)
+  /** Id baris indikator (`1.a`, `1.b`, …) yang sedang ditutup. */
+  const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(new Set())
+  /** Diisi dari kolom pencarian; saat aktif, baris turunan selalu dibuka. */
+  const [searching, setSearching] = useState(false)
 
   const loadSections = useCallback(async () => {
     const res = await api<{ sections: InstrumenSection[] }>('/api/instrumen')
@@ -389,6 +400,7 @@ export function InstrumenTable({ mode }: { mode: 'public' | 'admin' }) {
           namaFile: '',
           deskripsi: '',
           canAdd: true,
+          childCount: row.children?.length ?? 0,
         })
 
         for (const child of row.children ?? []) {
@@ -406,6 +418,7 @@ export function InstrumenTable({ mode }: { mode: 'public' | 'admin' }) {
             fileName: child.fileName,
             fileUrl: child.fileUrl,
             canAdd: false,
+            childCount: 0,
           })
         }
       }
@@ -413,6 +426,38 @@ export function InstrumenTable({ mode }: { mode: 'public' | 'admin' }) {
 
     return list
   }, [sections])
+
+  const indicatorsWithChildren = useMemo(
+    () => items.filter((item) => item.childCount > 0),
+    [items]
+  )
+
+  const toggleCollapsed = useCallback((id: string) => {
+    setCollapsed((current) => {
+      const next = new Set(current)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }, [])
+
+  const hasCollapsed = collapsed.size > 0
+
+  const toggleAll = useCallback(() => {
+    setCollapsed((current) =>
+      current.size > 0 ? new Set() : new Set(indicatorsWithChildren.map((item) => item.id))
+    )
+  }, [indicatorsWithChildren])
+
+  /** Baris turunan ikut disembunyikan saat baris indikator induknya ditutup. */
+  const visibleItems = useMemo(() => {
+    // Saat mencari, semua baris dibuka supaya hasil pencarian tidak tersembunyi
+    // di balik indikator yang sedang ditutup.
+    if (collapsed.size === 0 || searching) return items
+    return items.filter(
+      (item) => item.childNo === null || !collapsed.has(`${item.sectionNo}.${item.rowId}`)
+    )
+  }, [items, collapsed, searching])
 
   const searchFilter = useCallback((item: InstrumenItem, query: string) => {
     return [item.no, item.kriteria, item.subKriteria, item.indikator, item.namaFile, item.deskripsi]
@@ -615,14 +660,50 @@ export function InstrumenTable({ mode }: { mode: 'public' | 'admin' }) {
     {
       accessorKey: 'no',
       header: 'No',
-      cell: ({ row }) =>
-        row.original.childNo === null ? (
-          <span className="font-mono text-xs font-semibold tabular-nums">{row.original.no}</span>
-        ) : (
+      // Kolom ini memuat tombol buka/tutup baris turunan, jadi tidak disembunyikan.
+      enableHiding: false,
+      cell: ({ row }) => {
+        const item = row.original
+
+        if (item.childNo === null) {
+          const isCollapsed = collapsed.has(item.id)
+          const label = isCollapsed
+            ? `Buka baris ${item.no} (${item.childCount} dokumen)`
+            : `Tutup baris ${item.no} (${item.childCount} dokumen)`
+
+          return (
+            <div className="flex items-center gap-1">
+              {item.childCount > 0 ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  aria-expanded={!isCollapsed}
+                  aria-label={label}
+                  title={label}
+                  onClick={() => toggleCollapsed(item.id)}
+                >
+                  {isCollapsed ? <ChevronRight /> : <ChevronDown />}
+                </Button>
+              ) : (
+                <span className="inline-block size-6" aria-hidden />
+              )}
+              <span className="font-mono text-xs font-semibold tabular-nums">{item.no}</span>
+              {item.childCount > 0 ? (
+                <Badge variant="secondary" className="tabular-nums">
+                  {item.childCount}
+                </Badge>
+              ) : null}
+            </div>
+          )
+        }
+
+        return (
           <span className="ps-4 font-mono text-xs tabular-nums text-muted-foreground">
-            {row.original.no}
+            {item.no}
           </span>
-        ),
+        )
+      },
     },
     { accessorKey: 'kriteria', header: 'Kriteria' },
     { accessorKey: 'subKriteria', header: 'Sub Kriteria' },
@@ -669,12 +750,21 @@ export function InstrumenTable({ mode }: { mode: 'public' | 'admin' }) {
 
       <DataTable
         columns={columns}
-        data={items}
+        data={visibleItems}
         searchFilter={searchFilter}
         searchPlaceholder="Cari nomor, kriteria, indikator…"
         rowClassName={(item) => (item.childNo === null ? 'bg-muted/40' : undefined)}
         initialPageSize={25}
         emptyMessage={emptyMessage}
+        onQueryChange={(value) => setSearching(value.trim().length > 0)}
+        toolbar={
+          indicatorsWithChildren.length > 0 ? (
+            <Button type="button" variant="outline" size="sm" onClick={toggleAll}>
+              {hasCollapsed ? <ChevronsUpDown /> : <ChevronsDownUp />}
+              {hasCollapsed ? 'Buka semua' : 'Tutup semua'}
+            </Button>
+          ) : null
+        }
       />
 
       {activeForm ? (
