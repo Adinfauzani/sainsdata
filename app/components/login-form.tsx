@@ -30,7 +30,7 @@ export function LoginForm({ className, oauthError, ...props }: LoginFormProps) {
   const [submitting, setSubmitting] = useState(false)
 
   if (!loading && admin) {
-    router.replace(admin.role === 'user' ? `/${encodeURIComponent(admin.username)}` : '/dashboard')
+    router.replace('/dashboard')
     return null
   }
 
@@ -39,8 +39,8 @@ export function LoginForm({ className, oauthError, ...props }: LoginFormProps) {
     setError(null)
     setSubmitting(true)
     try {
-      const user = await login(email, password)
-      router.replace(user.role === 'user' ? `/${encodeURIComponent(user.username)}` : '/dashboard')
+      await login(email, password)
+      router.replace('/dashboard')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Gagal masuk')
     } finally {

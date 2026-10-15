@@ -47,7 +47,6 @@ export default function ProfilePage() {
 
   const displayName = profile?.name || admin.username
   const initial = displayName.charAt(0).toUpperCase()
-  const canAccessDashboard = admin.role === 'admin' || admin.role === 'sudo'
 
   const fields: { label: string; value: string; icon: typeof User }[] = [
     { label: 'Nama', value: displayName, icon: User },
@@ -105,14 +104,12 @@ export default function ProfilePage() {
             </dl>
 
             <div className="flex flex-wrap items-center gap-2 border-t border-border pt-4">
-              {canAccessDashboard ? (
-                <Button asChild size="sm">
-                  <Link href="/dashboard">
-                    <LayoutDashboard className="size-4" />
-                    Ke Dashboard
-                  </Link>
-                </Button>
-              ) : null}
+              <Button asChild size="sm">
+                <Link href="/dashboard">
+                  <LayoutDashboard className="size-4" />
+                  Ke Dashboard
+                </Link>
+              </Button>
               <Button variant="outline" size="sm" onClick={() => void logout()}>
                 <LogOut className="size-4" />
                 Keluar

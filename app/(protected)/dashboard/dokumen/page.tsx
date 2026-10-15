@@ -16,12 +16,9 @@ export default function DashboardDokumen() {
     if (!loading && !admin) {
       router.replace('/login')
     }
-    if (!loading && admin && admin.role === 'user') {
-      router.replace(`/${encodeURIComponent(admin.username)}`)
-    }
   }, [admin, loading, router])
 
-  if (loading || !admin || admin.role === 'user') return null
+  if (loading || !admin) return null
 
   return (
     <div className="flex flex-1 flex-col">

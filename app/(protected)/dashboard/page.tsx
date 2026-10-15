@@ -46,10 +46,6 @@ export default function DashboardOverview() {
       router.replace('/login')
       return
     }
-    if (!loading && admin && admin.role === 'user') {
-      router.replace(`/${encodeURIComponent(admin.username)}`)
-      return
-    }
   }, [admin, loading, router])
 
   useEffect(() => {

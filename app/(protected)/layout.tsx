@@ -66,9 +66,19 @@ interface NavItem {
 }
 
 const navMain: NavItem[] = [
-  { title: 'Overview', url: '/dashboard', icon: LayoutDashboard, roles: ['admin', 'sudo'] },
-  { title: 'Instrumen', url: '/dashboard/instrumen', icon: Table2, roles: ['admin', 'sudo'] },
-  { title: 'Data Dokumen', url: '/dashboard/dokumen', icon: FileText, roles: ['admin', 'sudo'] },
+  { title: 'Overview', url: '/dashboard', icon: LayoutDashboard, roles: ['user', 'admin', 'sudo'] },
+  {
+    title: 'Instrumen',
+    url: '/dashboard/instrumen',
+    icon: Table2,
+    roles: ['user', 'admin', 'sudo'],
+  },
+  {
+    title: 'Data Dokumen',
+    url: '/dashboard/dokumen',
+    icon: FileText,
+    roles: ['user', 'admin', 'sudo'],
+  },
   { title: 'Manajemen User', url: '/dashboard/users', icon: Users, roles: ['sudo'] },
   { title: 'Audit Log', url: '/dashboard/audit-log', icon: ShieldCheck, roles: ['sudo'] },
   { title: 'Pengaturan', url: '/dashboard/settings', icon: Settings2, roles: ['sudo'] },
@@ -237,15 +247,11 @@ function NavUser() {
 }
 
 function SidebarBrand() {
-  const { admin } = useAuth()
-  const href =
-    admin && admin.role === 'user' ? `/${encodeURIComponent(admin.username)}` : '/dashboard'
-
   return (
     <SidebarMenu>
       <SidebarMenuItem>
         <SidebarMenuButton asChild size="lg" className="data-[slot=sidebar-menu-button]:p-1.5!">
-          <a href={href}>
+          <a href="/dashboard">
             <img src="/favicon.png" alt="" className="size-6 rounded-sm" />
             <div className="grid flex-1 text-left leading-tight">
               <span className="truncate text-base font-semibold">Sains Data</span>
